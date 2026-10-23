@@ -17,6 +17,7 @@ const forceSubmitBody = index.match(/function forceSubmit\(\)\s*\{([\s\S]*?)\n\s
 const submitGuessBody = index.match(/function submitGuess\([^)]*\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function checkRoundComplete\(\)/)?.[1] || '';
 const showRoundResultBody = index.match(/function showRoundResult\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function proceedToNextRound\(\)/)?.[1] || '';
 const startTimerBody = index.match(/function startTimer\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function stopTimer\(\)/)?.[1] || '';
+const saveRankingBody = index.match(/async function saveRanking\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function shareGame\(/)?.[1] || '';
 
 function expect(condition, message) {
   if (!condition) failures.push(message);
@@ -61,6 +62,7 @@ expect(/id="rematch-btn"[^>]*hidden/.test(index), '2P 게임 오버 화면에 �
 expect(/let currentMatchId\s*=/.test(index) && /let gamePhase\s*=/.test(index), '재대결은 matchId와 gamePhase 상태를 관리해야 합니다.');
 expect(/event:\s*'rematch_vote'/.test(index) && /event:\s*'rematch_start'/.test(index), '재대결에는 rematch_vote와 rematch_start Realtime 이벤트가 필요합니다.');
 expect(/matchId:\s*currentMatchId/.test(index), '2P gameplay payload는 현재 matchId를 포함해야 합니다.');
+expect(/if \(isMultiplayer\) \{[\s\S]*?랭킹 등록 완료[\s\S]*?return;/.test(saveRankingBody), '2P 랭킹 저장 후에는 페이지를 새로고침하지 않고 재대결 화면을 유지해야 합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');
