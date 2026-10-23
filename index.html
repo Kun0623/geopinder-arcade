@@ -965,26 +965,27 @@
 
       function forceSubmit() {
         if (myGuessSubmitted) return;
-        if (!currentPin) currentPin = { lat: -90, lng: 0, name: myRole === 'host' ? '1P' : '2P', color: '#ff3366', type: 'guess' };
-        submitGuess();
+        submitGuess({ allowNoSelection: true });
       }
 
-      function submitGuess() {
+      function submitGuess({ allowNoSelection = false } = {}) {
         if (myGuessSubmitted || !currentQuestions.length) return;
-        if (!currentPin) {
+        if (!currentPin && !allowNoSelection) {
           showToast('지구본을 클릭해 위치를 먼저 선택하세요.', 'error');
           return;
         }
-        playSound('pin');
+        const hasSelection = Boolean(currentPin);
+        if (hasSelection) playSound('pin');
         myGuessSubmitted = true;
         $('submit-btn').disabled = true;
         stopTimer();
         if (isMultiplayer) {
-          $('submit-btn').textContent = '제출 완료!';
+          $('submit-btn').textContent = hasSelection ? '제출 완료!' : '선택 안 함 · 0점';
           $('sync-msg').style.display = 'block';
-          roomChannel?.send({ type: 'broadcast', event: 'guess_submit', payload: { lat: currentPin.lat, lng: currentPin.lng, round: currentRound } });
+          roomChannel?.send({ type: 'broadcast', event: 'guess_submit', payload: { noGuess: !currentPin, lat: currentPin?.lat ?? null, lng: currentPin?.lng ?? null, round: currentRound } });
           checkRoundComplete();
         } else {
+          if (!hasSelection) $('submit-btn').textContent = '선택 안 함 · 0점';
           showRoundResult();
         }
       }
@@ -1013,20 +1014,25 @@
       function showRoundResult() {
         if (isResultShown) return;
         const question = currentQuestions[currentRound - 1];
-        if (!question || !currentPin) return;
+        if (!question) return;
         isResultShown = true;
         stopTimer();
+        const hasSelection = Boolean(currentPin);
         const targetPin = { lat: question.lat, lng: question.lng, name: 'TARGET', color: '#33ff66', type: 'target' };
-        const myDistance = getDistance(currentPin.lat, currentPin.lng, question.lat, question.lng);
-        const elements = [currentPin, targetPin];
-        const arcs = [{ startLat: currentPin.lat, startLng: currentPin.lng, endLat: question.lat, endLng: question.lng, distance: myDistance, color: '#ff3366' }];
+        const myDistance = hasSelection ? getDistance(currentPin.lat, currentPin.lng, question.lat, question.lng) : null;
+        const elements = hasSelection ? [currentPin, targetPin] : [targetPin];
+        const arcs = hasSelection ? [{ startLat: currentPin.lat, startLng: currentPin.lng, endLat: question.lat, endLng: question.lng, distance: myDistance, color: '#ff3366' }] : [];
 
-        if (isMultiplayer && opponentPin) {
-          elements.push(opponentPin);
-          const opponentDistance = getDistance(opponentPin.lat, opponentPin.lng, question.lat, question.lng);
-          arcs.push({ startLat: opponentPin.lat, startLng: opponentPin.lng, endLat: question.lat, endLng: question.lng, distance: opponentDistance, color: '#00ffff' });
+        if (isMultiplayer) {
           $('opponent-result').style.display = 'block';
-          $('opp-dist').textContent = `${opponentDistance.toFixed(1)} km`;
+          if (opponentPin) {
+            elements.push(opponentPin);
+            const opponentDistance = getDistance(opponentPin.lat, opponentPin.lng, question.lat, question.lng);
+            arcs.push({ startLat: opponentPin.lat, startLng: opponentPin.lng, endLat: question.lat, endLng: question.lng, distance: opponentDistance, color: '#00ffff' });
+            $('opp-dist').textContent = `${opponentDistance.toFixed(1)} km`;
+          } else {
+            $('opp-dist').textContent = '선택 안 함';
+          }
         }
         if (myGlobe) {
           myGlobe.htmlElementsData(elements);
@@ -1034,13 +1040,13 @@
           myGlobe.pointOfView({ lat: question.lat, lng: question.lng, altitude: 2.5 }, 1500);
         }
 
-        const { score, title } = getScore(myDistance);
+        const { score, title } = hasSelection ? getScore(myDistance) : { score: 0, title: 'NO PICK' };
         if (score > 3000) playSound('success'); else playSound('miss');
         totalScore += score;
         updateHUD();
         $('result-title').textContent = title;
         $('result-title').style.color = title === 'PERFECT!!' ? 'var(--gold)' : 'var(--pink)';
-        $('result-distance').textContent = `${myDistance.toFixed(1)} km`;
+        $('result-distance').textContent = hasSelection ? `${myDistance.toFixed(1)} km` : '선택 안 함';
         $('result-score').textContent = `+ ${score} PTS`;
         $('next-btn').textContent = currentRound >= TOTAL_ROUNDS ? '결과 정산하기 (FINISH)' : 'NEXT ROUND >>';
         $('next-btn').style.display = isMultiplayer && myRole === 'guest' ? 'none' : 'inline-block';
@@ -1108,9 +1114,12 @@
           })
           .on('broadcast', { event: 'guess_submit' }, ({ payload }) => {
             if (payload && payload.round === currentRound) {
+              const noGuess = payload.noGuess === true;
+              const hasCoordinates = Number.isFinite(payload.lat) && Number.isFinite(payload.lng);
+              if (!noGuess && !hasCoordinates) return;
               oppGuessSubmitted = true;
-              opponentPin = { lat: payload.lat, lng: payload.lng, name: myRole === 'host' ? '2P' : '1P', color: '#00ffff', type: 'guess' };
-              showToast('상대방이 정답을 제출했습니다.');
+              opponentPin = noGuess ? null : { lat: payload.lat, lng: payload.lng, name: myRole === 'host' ? '2P' : '1P', color: '#00ffff', type: 'guess' };
+              showToast(noGuess ? '상대방이 위치를 선택하지 않았습니다.' : '상대방이 정답을 제출했습니다.');
               checkRoundComplete();
             }
           })

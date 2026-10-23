@@ -13,6 +13,9 @@ const failures = [];
 const beginSoloBody = index.match(/async function beginSolo\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*async function beginMultiplayer\(\)/)?.[1] || '';
 const playSoundBody = index.match(/function playSound\(type\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function requireSupabase\(\)/)?.[1] || '';
 const startGameMultiBody = index.match(/function startGameMulti\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*async function beginSolo\(\)/)?.[1] || '';
+const forceSubmitBody = index.match(/function forceSubmit\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function submitGuess\(/)?.[1] || '';
+const submitGuessBody = index.match(/function submitGuess\([^)]*\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function checkRoundComplete\(\)/)?.[1] || '';
+const showRoundResultBody = index.match(/function showRoundResult\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function proceedToNextRound\(\)/)?.[1] || '';
 
 function expect(condition, message) {
   if (!condition) failures.push(message);
@@ -38,6 +41,9 @@ expect(/const data = await getQuestions\(\) \|\| FALLBACK_QUESTIONS;/.test(begin
 expect(!/requireSupabase\(\)/.test(beginSoloBody), '1P 시작이 Supabase 미구성만으로 차단되면 안 됩니다.');
 expect(playSoundBody.indexOf('osc.start(now)') !== -1 && playSoundBody.indexOf('osc.start(now)') < playSoundBody.indexOf('osc.stop('), 'Web Audio oscillator는 stop() 전에 start()되어야 합니다.');
 expect(/closeModal\('waiting-modal'\)/.test(startGameMultiBody), '2P 라운드가 시작되면 호스트·게스트의 대기 모달을 닫아야 합니다.');
+expect(!/lat:\s*-90/.test(forceSubmitBody) && /submitGuess\(\{ allowNoSelection: true \}\)/.test(forceSubmitBody), '시간 종료 미선택은 가짜 좌표 없이 no-selection 제출로 처리해야 합니다.');
+expect(/allowNoSelection/.test(submitGuessBody) && /noGuess:\s*!currentPin/.test(submitGuessBody), '미선택 제출은 2P noGuess payload를 전송해야 합니다.');
+expect(/NO PICK/.test(showRoundResultBody) && /선택 안 함/.test(showRoundResultBody), '미선택 결과는 NO PICK과 선택 안 함을 표시해야 합니다.');
 expect(/class="globe-marker__icon"/.test(index) && /<svg[^>]*viewBox="0 0 48 56"/.test(index), '추측 위치에는 텍스트가 아닌 SVG 핀 마커가 필요합니다.');
 expect(/<svg[^>]*viewBox="0 0 56 56"/.test(index), '정답 위치에는 텍스트가 아닌 SVG 타겟 마커가 필요합니다.');
 expect(!/const icon = d\.type === 'guess' \? 'PIN' : 'TARGET';/.test(index), 'PIN/TARGET 문자열 마커가 남아 있습니다.');

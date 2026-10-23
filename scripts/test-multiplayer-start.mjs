@@ -8,6 +8,7 @@ const chromeBin = process.env.CHROME_BIN || 'chromium';
 const debugPort = 9400 + (process.pid % 400);
 const guestJoinDelayMs = Number(process.env.GEOPINDER_GUEST_JOIN_DELAY_MS || 500);
 const enableRealtimeTrace = process.env.GEOPINDER_REALTIME_TRACE === '1';
+const expectHostNoSelection = process.env.GEOPINDER_TEST_HOST_NO_SELECTION === '1';
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-mp-cdp-'));
 let chrome;
 const sockets = [];
@@ -75,6 +76,13 @@ async function evaluate(client, expression) {
   });
   if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Page evaluation failed.');
   return result.result?.value;
+}
+
+async function dispatchClick(client, x, y) {
+  await client.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none' });
+  await sleep(250);
+  await client.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+  await client.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
 }
 
 async function openPage(browserUrl, url) {
@@ -219,7 +227,45 @@ try {
   if (hostState.round !== '1/5' || guestState.round !== '1/5') {
     throw new Error(`Unexpected multiplayer round state: ${JSON.stringify({ host: hostState, guest: guestState })}`);
   }
-  console.log('Multiplayer start E2E passed: host and guest entered round 1 with waiting modals closed.');
+
+  if (expectHostNoSelection) {
+    const guestPoint = await evaluate(guest, `(() => ({ x: innerWidth / 2, y: innerHeight / 2 }))()`);
+    await dispatchClick(guest, guestPoint.x, guestPoint.y);
+    await waitFor('guest pin placement', async () => evaluate(guest, `document.getElementById('submit-btn').disabled === false`));
+    await evaluate(guest, `document.getElementById('submit-btn').click()`);
+    try {
+      await waitFor('no-selection multiplayer result', async () => {
+        const [hostResultOpen, guestResultOpen] = await Promise.all([
+          evaluate(host, `document.getElementById('result-modal').classList.contains('is-open')`),
+          evaluate(guest, `document.getElementById('result-modal').classList.contains('is-open')`)
+        ]);
+        return hostResultOpen && guestResultOpen;
+      }, 35_000);
+    } catch (error) {
+      const diagnostics = await Promise.all([host, guest].map((client) => evaluate(client, `(() => ({
+        timer: document.getElementById('time-display').textContent,
+        submitDisabled: document.getElementById('submit-btn').disabled,
+        submitText: document.getElementById('submit-btn').textContent,
+        resultOpen: document.getElementById('result-modal').classList.contains('is-open'),
+        title: document.getElementById('result-title').textContent,
+        score: document.getElementById('result-score').textContent,
+        opponentDistance: document.getElementById('opp-dist').textContent,
+        toasts: [...document.querySelectorAll('.toast')].map((node) => node.textContent)
+      }))()`)));
+      throw new Error(`${error.message} | diagnostics=${JSON.stringify({ host: diagnostics[0], guest: diagnostics[1] })}`);
+    }
+    const noSelectionState = await Promise.all([
+      evaluate(host, `({ title: document.getElementById('result-title').textContent, score: document.getElementById('result-score').textContent })`),
+      evaluate(guest, `({ opponentDistance: document.getElementById('opp-dist').textContent, opponentVisible: document.getElementById('opponent-result').style.display !== 'none' })`)
+    ]);
+    const [hostResult, guestResult] = noSelectionState;
+    if (hostResult.title !== 'NO PICK' || hostResult.score !== '+ 0 PTS' || guestResult.opponentDistance !== '선택 안 함' || !guestResult.opponentVisible) {
+      throw new Error(`Unexpected multiplayer no-selection state: ${JSON.stringify({ hostResult, guestResult })}`);
+    }
+    console.log('Multiplayer no-selection E2E passed: timed-out host received 0 points and guest saw 선택 안 함.');
+  } else {
+    console.log('Multiplayer start E2E passed: host and guest entered round 1 with waiting modals closed.');
+  }
   void browserVersion;
 } finally {
   sockets.forEach((socket) => socket.close());

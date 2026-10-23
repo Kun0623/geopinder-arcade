@@ -6,6 +6,7 @@ import { join } from 'node:path';
 const siteUrl = process.env.GEOPINDER_TEST_URL || 'http://127.0.0.1:4173/';
 const chromeBin = process.env.CHROME_BIN || 'chromium';
 const debugPort = 9300 + (process.pid % 500);
+const expectNoSelection = process.env.GEOPINDER_TEST_EXPECT_NO_SELECTION === '1';
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-cdp-'));
 let chrome;
 let ws;
@@ -132,6 +133,35 @@ try {
     throw new Error(`${error.message} | diagnostics=${JSON.stringify(diagnostics)}`);
   }
 
+  let completionMessage;
+  if (expectNoSelection) {
+    try {
+      await waitFor('no-selection result modal', async () => evaluate(client, `document.getElementById('result-modal').classList.contains('is-open')`), 30_000);
+    } catch (error) {
+      const diagnostics = await evaluate(client, `(() => ({
+        timer: document.getElementById('time-display').textContent,
+        submitDisabled: document.getElementById('submit-btn').disabled,
+        submitText: document.getElementById('submit-btn').textContent,
+        resultOpen: document.getElementById('result-modal').classList.contains('is-open'),
+        title: document.getElementById('result-title').textContent,
+        score: document.getElementById('result-score').textContent,
+        markerCount: document.querySelectorAll('.globe-marker__icon').length,
+        toasts: [...document.querySelectorAll('.toast')].map((node) => node.textContent)
+      }))()`);
+      throw new Error(`${error.message} | diagnostics=${JSON.stringify(diagnostics)}`);
+    }
+    const noSelectionResult = await evaluate(client, `({
+      title: document.getElementById('result-title').textContent,
+      distance: document.getElementById('result-distance').textContent,
+      score: document.getElementById('result-score').textContent,
+      markerViewBoxes: [...document.querySelectorAll('.globe-marker__icon')].map((marker) => marker.getAttribute('viewBox'))
+    })`);
+    const targetOnly = noSelectionResult.markerViewBoxes.length === 1 && noSelectionResult.markerViewBoxes[0] === '0 0 56 56';
+    if (noSelectionResult.title !== 'NO PICK' || noSelectionResult.distance !== '선택 안 함' || noSelectionResult.score !== '+ 0 PTS' || !targetOnly) {
+      throw new Error(`Unexpected no-selection result: ${JSON.stringify(noSelectionResult)}`);
+    }
+    completionMessage = 'No-selection E2E passed: timer expiry shows NO PICK and awards 0 points.';
+  } else {
   await evaluate(client, `(() => {
     window.__geopinderClickDebug = [];
     window.__geopinderRuntimeErrors = [];
@@ -192,7 +222,9 @@ try {
     const screenshot = await client.send('Page.captureScreenshot', { format: 'png' });
     await writeFile(process.env.GEOPINDER_TEST_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
   }
-  console.log(`Solo fallback E2E passed: ${result.hint}`);
+  completionMessage = `Solo fallback E2E passed: ${result.hint}`;
+  }
+  console.log(completionMessage);
   void version;
 } finally {
   ws?.close();
