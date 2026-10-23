@@ -109,15 +109,28 @@ try {
   await client.send('Runtime.enable');
   await waitFor('3D globe and 1P start button', async () => evaluate(client, `Boolean(document.querySelector('#globeViz canvas') && document.getElementById('start-btn'))`));
 
-  const startBox = await evaluate(client, `(() => { const rect = document.getElementById('start-btn').getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`);
-  await dispatchClick(client, startBox.x, startBox.y);
+  // 라운드 시작은 DOM 클릭으로 고정하고, 실제 회귀 대상인 3D 캔버스의 포인터 입력은 아래에서 CDP 마우스 이벤트로 검증한다.
+  await evaluate(client, `document.getElementById('start-btn').click()`);
 
-  await waitFor('Supabase-free 1P demo round', async () => evaluate(client, `(() => {
-    const panel = document.getElementById('quiz-panel');
-    const modal = document.getElementById('start-modal');
-    const hint = document.getElementById('quiz-hint');
-    return !modal.classList.contains('is-open') && !panel.classList.contains('hidden') && hint.textContent.includes('“');
-  })()`));
+  try {
+    await waitFor('Supabase-free 1P demo round', async () => evaluate(client, `(() => {
+      const panel = document.getElementById('quiz-panel');
+      const modal = document.getElementById('start-modal');
+      const hint = document.getElementById('quiz-hint');
+      return !modal.classList.contains('is-open') && !panel.classList.contains('hidden') && hint.textContent.includes('“');
+    })()`));
+  } catch (error) {
+    const diagnostics = await evaluate(client, `(() => ({
+      configured: Boolean(window.GEOPINDER_CONFIG?.supabaseUrl && window.GEOPINDER_CONFIG?.supabaseAnonKey),
+      startText: document.getElementById('start-btn').textContent,
+      startDisabled: document.getElementById('start-btn').disabled,
+      modalOpen: document.getElementById('start-modal').classList.contains('is-open'),
+      panelHidden: document.getElementById('quiz-panel').classList.contains('hidden'),
+      hint: document.getElementById('quiz-hint').textContent,
+      toasts: [...document.querySelectorAll('.toast')].map((node) => node.textContent)
+    }))()`);
+    throw new Error(`${error.message} | diagnostics=${JSON.stringify(diagnostics)}`);
+  }
 
   await evaluate(client, `(() => {
     window.__geopinderClickDebug = [];
