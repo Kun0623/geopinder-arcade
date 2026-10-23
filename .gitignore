@@ -1,0 +1,13 @@
+# Local Supabase browser configuration overrides (never commit credentials)
+config.local.js
+
+# Vercel and local tooling
+.vercel/
+.DS_Store
+mobile-*.png
+
+# Logs
+*.log
+
+# Internal implementation planning artifacts
+docs/superpowers/

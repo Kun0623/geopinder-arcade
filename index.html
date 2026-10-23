@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <meta name="description" content="GeoPinder Arcade는 3D 지구본에서 세계 랜드마크의 위치를 찾아 거리 점수를 겨루는 레트로 아케이드 지리 퀴즈 게임입니다.">
+  <meta name="keywords" content="GeoPinder, 지리 퀴즈, 3D 지구본, 아케이드 게임, 멀티플레이, 세계 랜드마크">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GeoPinder Arcade: 3D 세계 지리 퀴즈">
+  <meta property="og:description" content="3D 지구본에서 세계 랜드마크를 찾고 거리 점수를 겨뤄보세요.">
+  <meta property="og:site_name" content="GeoPinder Arcade">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="GeoPinder Arcade: 3D 세계 지리 퀴즈">
+  <meta name="twitter:description" content="3D 지구본에서 세계 랜드마크를 찾고 거리 점수를 겨뤄보세요.">
+  <title>GeoPinder Arcade: 3D 세계 지리 퀴즈</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <script src="https://unpkg.com/globe.gl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@1.530/neodgm/style.css">
+  <style>
+    :root {
+      --bg: #050505;
+      --panel: rgba(4, 8, 8, 0.9);
+      --green: #33ff66;
+      --pink: #ff3366;
+      --cyan: #00ffff;
+      --gold: #ffd700;
+      --white: #f7fff9;
+      --muted: #93a49a;
+      --shadow: #000;
+      --safe-top: max(14px, env(safe-area-inset-top));
+      --safe-right: max(14px, env(safe-area-inset-right));
+      --safe-bottom: max(14px, env(safe-area-inset-bottom));
+      --safe-left: max(14px, env(safe-area-inset-left));
+      --z-globe: 0;
+      --z-crt: 5;
+      --z-hud: 10;
+      --z-panel: 15;
+      --z-toast: 30;
+      --z-modal: 40;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
+      color: var(--green);
+      font-family: 'NeoDunggeunmo', ui-monospace, monospace;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body::after {
+      position: fixed;
+      z-index: var(--z-crt);
+      inset: 0;
+      content: '';
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.055), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.055));
+      background-size: 100% 3px, 4px 100%;
+      mix-blend-mode: screen;
+    }
+
+    button,
+    input { font: inherit; }
+
+    button { touch-action: manipulation; }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #globeViz {
+      position: fixed;
+      z-index: var(--z-globe);
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      background: radial-gradient(circle at 50% 46%, #142c31 0%, #071316 40%, #050505 72%);
+    }
+
+    .arcade-hud {
+      position: fixed;
+      z-index: var(--z-hud);
+      text-shadow: 2px 2px 0 var(--shadow);
+    }
+
+    .hud-top {
+      top: var(--safe-top);
+      right: var(--safe-right);
+      left: var(--safe-left);
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto minmax(170px, 1fr);
+      gap: clamp(10px, 2vw, 32px);
+      align-items: start;
+      pointer-events: none;
+    }
+
+    .hud-title {
+      min-width: 0;
+      color: var(--pink);
+      font-size: clamp(23px, 3vw, 38px);
+      line-height: 1;
+      letter-spacing: 0.02em;
+      text-shadow: 3px 3px 0 var(--shadow), 0 0 12px var(--pink);
+      animation: logo-pulse 2.3s ease-in-out infinite;
+    }
+
+    .online-badge {
+      display: none;
+      margin-left: 0.25rem;
+      color: var(--cyan);
+      font-size: 0.43em;
+      vertical-align: middle;
+      white-space: nowrap;
+      text-shadow: 0 0 8px var(--cyan);
+    }
+
+    .hud-timer,
+    .hud-stats {
+      visibility: hidden;
+      color: var(--white);
+      font-size: clamp(15px, 1.75vw, 24px);
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .hud-timer { text-align: center; }
+    .hud-stats { color: var(--gold); text-align: right; }
+    .hud-label { color: var(--pink); }
+    .hud-time { color: var(--gold); font-size: 1.32em; }
+
+    #quiz-panel {
+      position: fixed;
+      z-index: var(--z-panel);
+      top: 50%;
+      left: clamp(16px, 3vw, 42px);
+      width: min(340px, calc(100vw - var(--safe-left) - var(--safe-right) - 32px));
+      padding: 15px;
+      transform: translateY(-43%);
+      border: 3px solid var(--green);
+      background: var(--panel);
+      box-shadow: 5px 5px 0 var(--shadow), 0 0 18px rgba(51, 255, 102, 0.75);
+      text-align: center;
+      transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
+    }
+
+    #quiz-panel.hidden {
+      visibility: hidden;
+      opacity: 0;
+      transform: translateY(-43%) translateX(-14px);
+      pointer-events: none;
+    }
+
+    #quiz-img {
+      display: block;
+      width: 100%;
+      height: clamp(156px, 24vh, 210px);
+      margin: 0 auto 14px;
+      border: 2px solid var(--white);
+      object-fit: cover;
+      object-position: center;
+      background: #172326;
+      image-rendering: pixelated;
+    }
+
+    #quiz-hint {
+      min-height: 2.9em;
+      color: var(--white);
+      font-size: clamp(15px, 1.4vw, 19px);
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+      word-break: keep-all;
+    }
+
+    #sync-msg {
+      display: none;
+      margin-top: 10px;
+      color: var(--cyan);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .btn {
+      width: 100%;
+      margin: 14px 0 0;
+      padding: 11px 14px;
+      border: 3px solid var(--green);
+      border-radius: 0;
+      background: #030607;
+      color: var(--green);
+      box-shadow: 4px 4px 0 var(--green);
+      cursor: pointer;
+      font-size: clamp(15px, 1.4vw, 20px);
+      line-height: 1.15;
+      text-shadow: 1px 1px 0 var(--shadow);
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease, filter 120ms ease;
+    }
+
+    .btn-red { border-color: var(--pink); color: var(--pink); box-shadow: 4px 4px 0 var(--pink); }
+    .btn-blue { border-color: var(--cyan); color: var(--cyan); box-shadow: 4px 4px 0 var(--cyan); }
+    .btn-yellow { border-color: var(--gold); color: var(--gold); box-shadow: 4px 4px 0 var(--gold); }
+    .btn-white { border-color: var(--white); color: var(--white); box-shadow: 4px 4px 0 var(--white); }
+
+    .btn:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--white);
+      outline-offset: 4px;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translate(4px, 4px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .btn:disabled {
+      border-color: #4f5a54;
+      background: #151a17;
+      color: #69726e;
+      box-shadow: 3px 3px 0 #4f5a54;
+      cursor: not-allowed;
+      text-shadow: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .btn:hover:not(:disabled) {
+        transform: translate(-2px, -2px);
+        filter: brightness(1.18);
+      }
+      .btn:hover:not(:disabled):not(.btn-red):not(.btn-blue):not(.btn-yellow):not(.btn-white) {
+        background: var(--green);
+        color: #000;
+        box-shadow: 6px 6px 0 var(--green), 0 0 16px rgba(51, 255, 102, 0.9);
+      }
+      .btn-red:hover:not(:disabled) { background: var(--pink); color: #000; box-shadow: 6px 6px 0 var(--pink), 0 0 16px rgba(255, 51, 102, 0.9); }
+      .btn-blue:hover:not(:disabled) { background: var(--cyan); color: #000; box-shadow: 6px 6px 0 var(--cyan), 0 0 16px rgba(0, 255, 255, 0.9); }
+      .btn-yellow:hover:not(:disabled) { background: var(--gold); color: #000; box-shadow: 6px 6px 0 var(--gold), 0 0 16px rgba(255, 215, 0, 0.9); }
+      .btn-white:hover:not(:disabled) { background: var(--white); color: #000; box-shadow: 6px 6px 0 var(--white), 0 0 16px rgba(255, 255, 255, 0.9); }
+    }
+
+    .modal {
+      position: fixed;
+      z-index: var(--z-modal);
+      inset: 0;
+      display: grid;
+      visibility: hidden;
+      overflow-y: auto;
+      place-items: center;
+      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 190ms ease, visibility 0s linear 190ms;
+    }
+
+    .modal.is-open {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 190ms ease;
+    }
+
+    .modal-card {
+      width: min(500px, 100%);
+      max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+      overflow: auto;
+      padding: clamp(18px, 4vw, 30px);
+      border: 4px solid var(--white);
+      background: rgba(0, 0, 0, 0.97);
+      box-shadow: 10px 10px 0 var(--pink), 0 0 24px rgba(255, 51, 102, 0.45);
+      text-align: center;
+      transform: translateY(12px) scale(0.975);
+      transition: transform 210ms cubic-bezier(.2, .8, .2, 1);
+      scrollbar-color: var(--green) #111;
+    }
+
+    .modal.is-open .modal-card { transform: translateY(0) scale(1); }
+    .modal-card--gold { border-color: var(--gold); box-shadow: 10px 10px 0 var(--gold), 0 0 24px rgba(255, 215, 0, 0.4); }
+    .modal-card--cyan { border-color: var(--cyan); box-shadow: 10px 10px 0 var(--cyan), 0 0 24px rgba(0, 255, 255, 0.4); }
+
+    .modal h1,
+    .modal h2,
+    .modal h3,
+    .modal p { margin-right: 0; margin-left: 0; }
+
+    .modal h1 {
+      margin-top: 0;
+      margin-bottom: 4px;
+      color: var(--pink);
+      font-size: clamp(38px, 9vw, 54px);
+      line-height: 0.95;
+      text-shadow: 3px 3px 0 var(--shadow), 0 0 16px var(--pink);
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      margin-bottom: 18px;
+      color: var(--pink);
+      font-size: clamp(27px, 6vw, 38px);
+      line-height: 1.1;
+    }
+
+    .modal p { color: var(--white); font-size: clamp(15px, 3.8vw, 20px); line-height: 1.4; }
+    .modal-subtitle { margin-top: 0; margin-bottom: 20px; color: var(--cyan) !important; font-size: 17px !important; }
+
+    .ranking-box {
+      margin: 18px 0 20px;
+      padding: 14px 0;
+      border-top: 2px dashed #4f5a54;
+      border-bottom: 2px dashed #4f5a54;
+      text-align: left;
+    }
+
+    .ranking-box h2 {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 20px;
+      text-align: center;
+    }
+
+    #ranking-list {
+      max-height: min(190px, 24dvh);
+      padding: 0 10px;
+      overflow-y: auto;
+      color: var(--white);
+      font-size: clamp(15px, 3.8vw, 18px);
+      line-height: 1.65;
+    }
+
+    .ranking-row { display: flex; justify-content: space-between; gap: 16px; }
+    .ranking-row--first { color: var(--gold); }
+
+    .difficulty-label { margin-bottom: 10px; color: var(--white); font-size: 16px; }
+    .difficulty-select,
+    .button-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .button-row { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 10px; }
+    .button-row--stack { grid-template-columns: 1fr; }
+    .difficulty-select .btn,
+    .button-row .btn { margin: 0; }
+
+    .diff-btn.is-selected { background: var(--green); color: #000; }
+    .diff-btn[data-diff='normal'].is-selected { background: var(--pink); }
+    .diff-btn[data-diff='hard'].is-selected { background: var(--gold); }
+
+    .input-field {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid var(--cyan);
+      border-radius: 0;
+      background: #000;
+      color: var(--white);
+      font-size: 17px;
+      text-align: center;
+    }
+
+    #initials-input {
+      width: 116px;
+      border-color: var(--green);
+      color: var(--green);
+      font-size: 30px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .score-highlight {
+      display: block;
+      margin: 18px 0;
+      color: var(--gold);
+      font-size: clamp(34px, 9vw, 44px);
+      line-height: 1;
+      text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
+    }
+
+    .ad-slot {
+      display: grid;
+      width: 100%;
+      min-height: 180px;
+      place-items: center;
+      margin: 15px 0;
+      padding: 20px;
+      border: 2px dashed #5d5d5d;
+      background: #151515;
+      color: #949494;
+      font-size: 16px;
+    }
+
+    #toast-container {
+      position: fixed;
+      z-index: var(--z-toast);
+      top: calc(var(--safe-top) + 82px);
+      left: 50%;
+      display: flex;
+      width: min(460px, calc(100vw - var(--safe-left) - var(--safe-right)));
+      flex-direction: column;
+      gap: 9px;
+      align-items: center;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .toast {
+      width: fit-content;
+      max-width: 100%;
+      padding: 11px 16px;
+      border: 2px solid var(--green);
+      background: rgba(0, 0, 0, 0.95);
+      box-shadow: 4px 4px 0 var(--green);
+      color: var(--white);
+      font-size: 16px;
+      line-height: 1.3;
+      text-align: center;
+      animation: toast-in 210ms ease-out both;
+    }
+
+    .toast.error { border-color: var(--pink); box-shadow: 4px 4px 0 var(--pink); }
+
+    @keyframes logo-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.72; }
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(-14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-8px); }
+    }
+
+    @media (max-width: 760px) {
+      .hud-top {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 6px 12px;
+      }
+      .hud-title { grid-column: 1 / -1; text-align: center; }
+      .hud-timer { text-align: left; }
+      .hud-stats { text-align: right; }
+      .hud-timer,
+      .hud-stats { font-size: clamp(14px, 4.1vw, 17px); }
+
+      #quiz-panel {
+        top: auto;
+        right: var(--safe-right);
+        bottom: var(--safe-bottom);
+        left: var(--safe-left);
+        width: auto;
+        max-width: 470px;
+        margin: 0 auto;
+        padding: 10px;
+        transform: none;
+        border-width: 2px;
+        box-shadow: 3px 3px 0 var(--shadow), 0 0 12px rgba(51, 255, 102, 0.68);
+      }
+      #quiz-panel.hidden { transform: translateY(14px); }
+      #quiz-img { height: clamp(82px, 15dvh, 130px); margin-bottom: 8px; border-width: 1px; }
+      #quiz-hint { min-height: 2.6em; font-size: clamp(13px, 3.8vw, 16px); }
+      #sync-msg { margin-top: 7px; font-size: 13px; }
+      .btn { padding: 10px 9px; border-width: 2px; box-shadow: 3px 3px 0 currentColor; font-size: clamp(14px, 3.8vw, 16px); }
+      .btn:active:not(:disabled) { transform: translate(3px, 3px); }
+      .modal-card { border-width: 3px; box-shadow: 6px 6px 0 var(--pink), 0 0 18px rgba(255, 51, 102, 0.42); }
+      .modal-card--gold { box-shadow: 6px 6px 0 var(--gold), 0 0 18px rgba(255, 215, 0, 0.38); }
+      .modal-card--cyan { box-shadow: 6px 6px 0 var(--cyan), 0 0 18px rgba(0, 255, 255, 0.38); }
+      .modal-subtitle { font-size: 15px !important; }
+      #toast-container { top: calc(var(--safe-top) + 76px); }
+      .toast { font-size: 14px; }
+    }
+
+    @media (max-height: 650px) and (min-width: 761px) {
+      #quiz-panel { top: auto; bottom: var(--safe-bottom); transform: none; }
+      #quiz-panel.hidden { transform: translateX(-14px); }
+      #quiz-img { height: 126px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main aria-label="GeoPinder Arcade 게임">
+    <div id="globeViz" aria-hidden="true"></div>
+
+    <section class="visually-hidden" aria-label="게임 소개">
+      <h1>GeoPinder Arcade 3D 세계 지리 퀴즈</h1>
+      <h2>지구본 위에서 랜드마크 위치를 찾는 아케이드 게임</h2>
+      <p>사진과 힌트를 보고 3D 지구본의 위치를 선택하세요. 실제 위치와의 거리가 짧을수록 높은 점수를 얻습니다.</p>
+    </section>
+
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <header class="arcade-hud hud-top" aria-label="게임 상태">
+      <div class="hud-title">GeoPinder <span id="multi-badge" class="online-badge">[ONLINE]</span></div>
+      <div id="hud-timer" class="hud-timer"><span class="hud-label">TIME</span><br><span id="time-display" class="hud-time">20</span></div>
+      <div id="hud-stats" class="hud-stats">ROUND: <span id="round-display">1/5</span><br>SCORE: <span id="score-display">00000</span></div>
+    </header>
+
+    <aside id="quiz-panel" class="arcade-hud hidden" aria-label="현재 문제">
+      <img id="quiz-img" src="" alt="문제 랜드마크 이미지">
+      <div id="quiz-hint">문제를 불러오는 중입니다.</div>
+      <div id="sync-msg" aria-live="polite">상대방의 제출을 기다리는 중입니다.</div>
+      <button id="submit-btn" class="btn btn-red" type="button" disabled>여기가 확실해!</button>
+    </aside>
+
+    <div id="start-modal" class="modal is-open" role="presentation">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="start-title">
+        <h1 id="start-title">GeoPinder</h1>
+        <p class="modal-subtitle">~ Arcade Edition ~</p>
+        <div class="ranking-box">
+          <h2>HALL OF FAME</h2>
+          <div id="ranking-list" aria-live="polite">랭킹을 불러오는 중입니다.</div>
+        </div>
+        <div class="difficulty-label">난이도 선택 (Difficulty)</div>
+        <div id="difficulty-select" class="difficulty-select" aria-label="난이도 선택">
+          <button class="btn diff-btn is-selected" type="button" data-diff="easy" aria-pressed="true">초급</button>
+          <button class="btn diff-btn btn-red" type="button" data-diff="normal" aria-pressed="false">중급</button>
+          <button class="btn diff-btn btn-yellow" type="button" data-diff="hard" aria-pressed="false">고급</button>
+        </div>
+        <div class="button-row">
+          <button id="start-btn" class="btn btn-red" type="button">1P 혼자하기</button>
+          <button id="multi-btn" class="btn btn-blue" type="button">2P 대결하기</button>
+        </div>
+        <div class="button-row">
+          <button id="start-share-btn" class="btn btn-white" type="button">공유하기</button>
+          <button class="btn donate-btn btn-yellow" type="button">개발자 후원</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="waiting-modal" class="modal" role="presentation">
+      <section class="modal-card modal-card--cyan" role="dialog" aria-modal="true" aria-labelledby="waiting-title">
+        <h2 id="waiting-title" style="color:var(--cyan)">WAITING...</h2>
+        <p>친구에게 아래 링크를 공유하세요.</p>
+        <input id="invite-link" class="input-field" type="text" readonly aria-label="초대 링크">
+        <button id="copy-link-btn" class="btn btn-blue" type="button">링크 복사 (COPY)</button>
+        <p id="wait-msg" style="color:var(--pink);font-size:16px">상대방의 접속을 기다리는 중입니다.</p>
+      </section>
+    </div>
+
+    <div id="result-modal" class="modal" role="presentation">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
+        <h2 id="result-title">GOOD!</h2>
+        <p>나의 오차: <span id="result-distance" style="color:var(--green)">0 km</span></p>
+        <p id="opponent-result" style="display:none;color:var(--cyan)">상대 오차: <span id="opp-dist">0 km</span></p>
+        <p>획득 점수: <span id="result-score" style="color:var(--gold)">+ 0 PTS</span></p>
+        <button id="next-btn" class="btn" type="button">NEXT ROUND &gt;&gt;</button>
+      </section>
+    </div>
+
+    <div id="ad-modal" class="modal" role="presentation">
+      <section class="modal-card modal-card--gold" role="dialog" aria-modal="true" aria-labelledby="ad-title">
+        <h2 id="ad-title" style="color:var(--gold);font-size:28px">스폰서 광고</h2>
+        <div class="ad-slot">
+          <!-- Google AdSense 스크립트와 광고 단위를 이 영역에 삽입하세요. -->
+          [ Google AdSense 영역 ]
+        </div>
+        <p><span id="ad-timer-span" style="color:var(--green);font-size:30px">5</span>초 후 최종 결과창으로 이동합니다.</p>
+      </section>
+    </div>
+
+    <div id="gameover-modal" class="modal" role="presentation">
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
+        <h2 id="gameover-title">GAME OVER</h2>
+        <p>TOTAL SCORE</p>
+        <span id="final-score" class="score-highlight">00000</span>
+        <label for="initials-input"><span class="visually-hidden">랭킹에 표시할 이니셜</span>ENTER INITIALS</label><br>
+        <input id="initials-input" class="input-field" type="text" maxlength="3" autocomplete="off" placeholder="AAA" aria-describedby="initials-help"><br>
+        <span id="initials-help" class="visually-hidden">영문 또는 숫자 세 글자를 입력하세요.</span>
+        <div class="button-row" style="margin-top:20px">
+          <button id="save-rank-btn" class="btn btn-red" type="button">랭킹 등록</button>
+          <button id="gameover-share-btn" class="btn btn-blue" type="button">자랑하기</button>
+        </div>
+        <div class="button-row button-row--stack">
+          <button class="btn donate-btn btn-yellow" type="button">재미있었다면 커피 사주기</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Vercel 환경변수 또는 직접 입력 -->
+  <!--
+    정적 Vercel 배포는 런타임 환경변수를 브라우저에 자동 노출하지 않습니다.
+    `config.example.js`를 참고해 로컬 또는 별도 배포 단계에서 window.GEOPINDER_CONFIG를 주입하세요.
+    Supabase의 Anon Key만 사용할 수 있으며 service role 키는 절대 브라우저에 넣지 마세요.
+  -->
+  <script src="/config.js" onerror="void 0"></script>
+  <script>
+    window.GEOPINDER_CONFIG = window.GEOPINDER_CONFIG || {
+      supabaseUrl: '',
+      supabaseAnonKey: ''
+    };
+  </script>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const config = window.GEOPINDER_CONFIG || {};
+      const supabaseUrl = typeof config.supabaseUrl === 'string' ? config.supabaseUrl.trim() : '';
+      const supabaseAnonKey = typeof config.supabaseAnonKey === 'string' ? config.supabaseAnonKey.trim() : '';
+      const hasSupabaseConfig = /^https:\/\/.+\.supabase\.co\/?$/i.test(supabaseUrl) && supabaseAnonKey.length > 20;
+      const supabaseClient = hasSupabaseConfig && window.supabase
+        ? window.supabase.createClient(supabaseUrl, supabaseAnonKey)
+        : null;
+
+      const TOTAL_ROUNDS = 5;
+      const ROUND_SECONDS = 20;
+      const $ = (id) => document.getElementById(id);
+      const modals = ['start-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
+
+      let allQuestions = [];
+      let currentQuestions = [];
+      let currentRound = 1;
+      let totalScore = 0;
+      let currentPin = null;
+      let opponentPin = null;
+      let isResultShown = false;
+      let currentDifficulty = 'easy';
+      let isMultiplayer = false;
+      let roomCode = null;
+      let roomChannel = null;
+      let myRole = 'host';
+      let myGuessSubmitted = false;
+      let oppGuessSubmitted = false;
+      let timerInterval = null;
+      let resultRevealTimer = null;
+      let adInterval = null;
+      let timeLeft = ROUND_SECONDS;
+      let audioCtx = null;
+      let myGlobe = null;
+
+      function showModal(id) {
+        modals.forEach((modalId) => {
+          const modal = $(modalId);
+          const open = modalId === id;
+          modal.classList.toggle('is-open', open);
+          modal.setAttribute('aria-hidden', String(!open));
+        });
+        if (id) {
+          window.setTimeout(() => {
+            const focusable = $(id).querySelector('button:not([disabled]), input:not([disabled])');
+            focusable?.focus({ preventScroll: true });
+          }, 0);
+        }
+      }
+
+      function closeModal(id) {
+        const modal = $(id);
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast${type === 'error' ? ' error' : ''}`;
+        toast.textContent = message;
+        $('toast-container').appendChild(toast);
+        window.setTimeout(() => {
+          toast.style.animation = 'toast-out 180ms ease-in forwards';
+          window.setTimeout(() => toast.remove(), 200);
+        }, 2800);
+      }
+
+      function initAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playSound(type) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        osc.type = type === 'miss' ? 'sawtooth' : 'square';
+        if (type === 'pin') {
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.stop(now + 0.1);
+        } else if (type === 'success') {
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(554, now + 0.1);
+          osc.frequency.setValueAtTime(659, now + 0.2);
+          gain.gain.setValueAtTime(0.17, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+          osc.stop(now + 0.4);
+        } else {
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(100, now + 0.4);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+          osc.stop(now + 0.4);
+        }
+        osc.start(now);
+      }
+
+      function requireSupabase() {
+        if (supabaseClient) return true;
+        showToast('Supabase URL과 Anon Key를 설정한 뒤 다시 시도하세요.', 'error');
+        return false;
+      }
+
+      function setBusy(button, isBusy, label) {
+        button.disabled = isBusy;
+        if (label) button.textContent = label;
+      }
+
+      async function getQuestions() {
+        if (!requireSupabase()) return null;
+        const { data, error } = await supabaseClient.from('geopinder_places').select('*');
+        if (error) {
+          showToast('문제를 불러오지 못했습니다. Supabase 설정을 확인하세요.', 'error');
+          return null;
+        }
+        if (!Array.isArray(data) || data.length < TOTAL_ROUNDS) {
+          showToast(`문제 데이터가 ${TOTAL_ROUNDS}개 이상 필요합니다.`, 'error');
+          return null;
+        }
+        return data;
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function updateHUD() {
+        $('round-display').textContent = `${currentRound}/${TOTAL_ROUNDS}`;
+        $('score-display').textContent = totalScore.toString().padStart(5, '0');
+      }
+
+      function showHUD() {
+        $('hud-timer').style.visibility = 'visible';
+        $('hud-stats').style.visibility = 'visible';
+      }
+
+      function resetGameState() {
+        currentRound = 1;
+        totalScore = 0;
+        currentPin = null;
+        opponentPin = null;
+        isResultShown = false;
+        myGuessSubmitted = false;
+        oppGuessSubmitted = false;
+        clearInterval(adInterval);
+        updateHUD();
+      }
+
+      function startTimer() {
+        clearInterval(timerInterval);
+        timeLeft = ROUND_SECONDS;
+        $('time-display').textContent = timeLeft;
+        $('time-display').style.color = 'var(--gold)';
+        timerInterval = window.setInterval(() => {
+          timeLeft -= 1;
+          $('time-display').textContent = timeLeft;
+          if (timeLeft === 5) $('time-display').style.color = 'var(--pink)';
+          if (timeLeft <= 5 && timeLeft > 0) playSound('pin');
+          if (timeLeft <= 0) {
+            stopTimer();
+            showToast('시간 초과!', 'error');
+            forceSubmit();
+          }
+        }, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      function initializeGlobe() {
+        if (typeof window.Globe !== 'function') {
+          showToast('3D 지구본을 불러오지 못했습니다. 네트워크를 확인하세요.', 'error');
+          return;
+        }
+        myGlobe = Globe()($('globeViz'))
+          .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+          .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+          .polygonAltitude(0.01)
+          .polygonCapColor(() => 'rgba(0,0,0,0)')
+          .polygonSideColor(() => 'rgba(0,0,0,0)')
+          .polygonStrokeColor((d) => d.properties.TYPE === 'Country' ? 'rgba(51,255,102,1)' : 'rgba(51,255,102,0.25)')
+          .htmlElementsData([])
+          .htmlElement((d) => {
+            const el = document.createElement('div');
+            const icon = d.type === 'guess' ? 'PIN' : 'TARGET';
+            el.innerHTML = `<div style="transform:translate(0,-40%);display:flex;flex-direction:column;align-items:center;pointer-events:none"><div style="background:${d.color};border:2px solid #fff;font-family:NeoDunggeunmo,monospace;font-size:14px;color:#000;padding:2px 6px;margin-bottom:2px">${d.name}</div><div style="color:${d.color};font-family:monospace;font-weight:bold;font-size:13px;text-shadow:1px 1px 0 #000">${icon}</div></div>`;
+            return el;
+          })
+          .arcLabel((d) => `DIST: ${d.distance.toFixed(0)} km`)
+          .arcColor((d) => [d.color, '#33ff66'])
+          .arcDashLength(0.4)
+          .arcDashGap(0.1)
+          .arcDashAnimateTime(1500)
+          .arcStroke(2)
+          .onGlobeClick(({ lat, lng }) => handleMapClick(lat, lng))
+          .onPolygonClick((polygon, event, { lat, lng }) => handleMapClick(lat, lng));
+
+        const geoData = [];
+        Promise.allSettled([
+          fetch('https://unpkg.com/globe.gl/example/datasets/ne_110m_admin_0_countries.geojson').then((response) => response.ok ? response.json() : Promise.reject(new Error('Country boundary request failed'))),
+          fetch('https://gist.githubusercontent.com/deldersveld/865f17849ed717bfa4439c3629e4b6c3/raw/global-admin-1.geojson').then((response) => response.ok ? response.json() : Promise.reject(new Error('State boundary request failed')))
+        ]).then(([countriesResult, statesResult]) => {
+          if (countriesResult.status === 'fulfilled' && Array.isArray(countriesResult.value.features)) {
+            countriesResult.value.features.forEach((feature) => { feature.properties.TYPE = 'Country'; });
+            geoData.push(...countriesResult.value.features);
+          }
+          if (statesResult.status === 'fulfilled' && Array.isArray(statesResult.value.features)) {
+            statesResult.value.features.forEach((feature) => { feature.properties.TYPE = 'State'; });
+            geoData.push(...statesResult.value.features);
+          }
+          if (!geoData.length) {
+            showToast('국가 경계를 불러오지 못했습니다.', 'error');
+            return;
+          }
+          myGlobe.polygonsData(geoData);
+        });
+
+        myGlobe.controls().autoRotate = true;
+        myGlobe.controls().autoRotateSpeed = 1;
+        myGlobe.controls().minDistance = 200;
+        myGlobe.controls().maxDistance = 400;
+        myGlobe.controls().addEventListener('start', () => { myGlobe.controls().autoRotate = false; });
+        window.addEventListener('resize', () => myGlobe.width(window.innerWidth).height(window.innerHeight));
+      }
+
+      function updateMapPins() {
+        if (!myGlobe) return;
+        const pins = [];
+        if (currentPin) pins.push(currentPin);
+        if (isMultiplayer && opponentPin && !isResultShown) pins.push(opponentPin);
+        myGlobe.htmlElementsData(pins);
+      }
+
+      function handleMapClick(lat, lng) {
+        if (!myGlobe || isResultShown || myGuessSubmitted || !currentQuestions.length) return;
+        playSound('pin');
+        currentPin = { lat, lng, name: myRole === 'host' ? '1P' : '2P', color: '#ff3366', type: 'guess' };
+        updateMapPins();
+        $('submit-btn').disabled = false;
+        if (isMultiplayer && roomChannel) {
+          roomChannel.send({ type: 'broadcast', event: 'pin_move', payload: { lat, lng } });
+        }
+      }
+
+      function loadQuestion(index) {
+        const question = currentQuestions[index];
+        if (!question) {
+          showToast('문제 데이터를 찾을 수 없습니다.', 'error');
+          return;
+        }
+        $('quiz-img').src = question.img || '';
+        $('quiz-img').alt = question.hint ? `${question.hint} 문제 이미지` : '문제 랜드마크 이미지';
+        $('quiz-hint').textContent = `“${question.hint || '힌트가 없습니다.'}”`;
+        $('submit-btn').disabled = true;
+        $('submit-btn').textContent = '여기가 확실해!';
+        $('sync-msg').style.display = 'none';
+        $('opponent-result').style.display = 'none';
+        currentPin = null;
+        opponentPin = null;
+        isResultShown = false;
+        myGuessSubmitted = false;
+        oppGuessSubmitted = false;
+        if (myGlobe) {
+          myGlobe.htmlElementsData([]);
+          myGlobe.arcsData([]);
+          myGlobe.controls().autoRotate = true;
+        }
+        startTimer();
+      }
+
+      function getDistance(lat1, lon1, lat2, lon2) {
+        const radius = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+        return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+
+      function forceSubmit() {
+        if (myGuessSubmitted) return;
+        if (!currentPin) currentPin = { lat: -90, lng: 0, name: myRole === 'host' ? '1P' : '2P', color: '#ff3366', type: 'guess' };
+        submitGuess();
+      }
+
+      function submitGuess() {
+        if (myGuessSubmitted || !currentQuestions.length) return;
+        if (!currentPin) {
+          showToast('지구본을 클릭해 위치를 먼저 선택하세요.', 'error');
+          return;
+        }
+        playSound('pin');
+        myGuessSubmitted = true;
+        $('submit-btn').disabled = true;
+        stopTimer();
+        if (isMultiplayer) {
+          $('submit-btn').textContent = '제출 완료!';
+          $('sync-msg').style.display = 'block';
+          roomChannel?.send({ type: 'broadcast', event: 'guess_submit', payload: { lat: currentPin.lat, lng: currentPin.lng, round: currentRound } });
+          checkRoundComplete();
+        } else {
+          showRoundResult();
+        }
+      }
+
+      function checkRoundComplete() {
+        if (myGuessSubmitted && oppGuessSubmitted) {
+          $('sync-msg').style.display = 'none';
+          showRoundResult();
+        }
+      }
+
+      function getScore(distance) {
+        let penaltyRate = 2;
+        let perfectZone = 50;
+        if (currentDifficulty === 'easy') { penaltyRate = 0.5; perfectZone = 300; }
+        if (currentDifficulty === 'hard') { penaltyRate = 5; perfectZone = 20; }
+        let score = Math.floor(10000 - (distance * penaltyRate));
+        let title = 'MISS...';
+        if (distance <= perfectZone) { title = 'PERFECT!!'; score = 13000; }
+        else if (score > 7000) title = 'EXCELLENT!';
+        else if (score > 3000) title = 'GOOD';
+        else score = Math.max(0, score);
+        return { score, title };
+      }
+
+      function showRoundResult() {
+        if (isResultShown) return;
+        const question = currentQuestions[currentRound - 1];
+        if (!question || !currentPin) return;
+        isResultShown = true;
+        stopTimer();
+        const targetPin = { lat: question.lat, lng: question.lng, name: 'TARGET', color: '#33ff66', type: 'target' };
+        const myDistance = getDistance(currentPin.lat, currentPin.lng, question.lat, question.lng);
+        const elements = [currentPin, targetPin];
+        const arcs = [{ startLat: currentPin.lat, startLng: currentPin.lng, endLat: question.lat, endLng: question.lng, distance: myDistance, color: '#ff3366' }];
+
+        if (isMultiplayer && opponentPin) {
+          elements.push(opponentPin);
+          const opponentDistance = getDistance(opponentPin.lat, opponentPin.lng, question.lat, question.lng);
+          arcs.push({ startLat: opponentPin.lat, startLng: opponentPin.lng, endLat: question.lat, endLng: question.lng, distance: opponentDistance, color: '#00ffff' });
+          $('opponent-result').style.display = 'block';
+          $('opp-dist').textContent = `${opponentDistance.toFixed(1)} km`;
+        }
+        if (myGlobe) {
+          myGlobe.htmlElementsData(elements);
+          myGlobe.arcsData(arcs);
+          myGlobe.pointOfView({ lat: question.lat, lng: question.lng, altitude: 2.5 }, 1500);
+        }
+
+        const { score, title } = getScore(myDistance);
+        if (score > 3000) playSound('success'); else playSound('miss');
+        totalScore += score;
+        updateHUD();
+        $('result-title').textContent = title;
+        $('result-title').style.color = title === 'PERFECT!!' ? 'var(--gold)' : 'var(--pink)';
+        $('result-distance').textContent = `${myDistance.toFixed(1)} km`;
+        $('result-score').textContent = `+ ${score} PTS`;
+        $('next-btn').textContent = currentRound >= TOTAL_ROUNDS ? '결과 정산하기 (FINISH)' : 'NEXT ROUND >>';
+        $('next-btn').style.display = isMultiplayer && myRole === 'guest' ? 'none' : 'inline-block';
+        if (isMultiplayer && myRole === 'guest') $('result-title').textContent = `${title} (호스트 대기)`;
+        clearTimeout(resultRevealTimer);
+        resultRevealTimer = window.setTimeout(() => showModal('result-modal'), 1250);
+      }
+
+      function proceedToNextRound() {
+        closeModal('result-modal');
+        if (currentRound < TOTAL_ROUNDS) {
+          currentRound += 1;
+          updateHUD();
+          loadQuestion(currentRound - 1);
+        } else {
+          showAdAndGameOver();
+        }
+      }
+
+      function showAdAndGameOver() {
+        showModal('ad-modal');
+        let adTime = 5;
+        $('ad-timer-span').textContent = adTime;
+        clearInterval(adInterval);
+        adInterval = window.setInterval(() => {
+          adTime -= 1;
+          $('ad-timer-span').textContent = adTime;
+          if (adTime <= 0) {
+            clearInterval(adInterval);
+            $('final-score').textContent = totalScore.toString().padStart(5, '0');
+            $('save-rank-btn').disabled = false;
+            $('save-rank-btn').textContent = '랭킹 등록';
+            showModal('gameover-modal');
+          }
+        }, 1000);
+      }
+
+      function generateRoomCode() {
+        return Math.random().toString(36).slice(2, 6).toUpperCase();
+      }
+
+      function setupRealtimeChannel() {
+        if (!supabaseClient || !roomCode) return;
+        roomChannel?.unsubscribe();
+        roomChannel = supabaseClient.channel(`room_${roomCode}`);
+        roomChannel
+          .on('broadcast', { event: 'guest_joined' }, () => {
+            if (myRole === 'host') {
+              roomChannel.send({ type: 'broadcast', event: 'game_start', payload: { difficulty: currentDifficulty } });
+              showToast('친구가 접속했습니다! 게임을 시작합니다.');
+              startGameMulti();
+            }
+          })
+          .on('broadcast', { event: 'game_start' }, ({ payload }) => {
+            if (myRole === 'guest') {
+              if (payload?.difficulty) currentDifficulty = payload.difficulty;
+              startGameMulti();
+            }
+          })
+          .on('broadcast', { event: 'pin_move' }, ({ payload }) => {
+            if (!isResultShown && payload && Number.isFinite(payload.lat) && Number.isFinite(payload.lng)) {
+              opponentPin = { lat: payload.lat, lng: payload.lng, name: myRole === 'host' ? '2P' : '1P', color: '#00ffff', type: 'guess' };
+              updateMapPins();
+            }
+          })
+          .on('broadcast', { event: 'guess_submit' }, ({ payload }) => {
+            if (payload && payload.round === currentRound) {
+              oppGuessSubmitted = true;
+              opponentPin = { lat: payload.lat, lng: payload.lng, name: myRole === 'host' ? '2P' : '1P', color: '#00ffff', type: 'guess' };
+              showToast('상대방이 정답을 제출했습니다.');
+              checkRoundComplete();
+            }
+          })
+          .on('broadcast', { event: 'next_round' }, () => proceedToNextRound())
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED' && myRole === 'guest') {
+              roomChannel.send({ type: 'broadcast', event: 'guest_joined', payload: {} });
+            }
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              showToast('멀티플레이 연결에 실패했습니다.', 'error');
+            }
+          });
+      }
+
+      function startGameMulti() {
+        $('multi-badge').style.display = 'inline';
+        resetGameState();
+        showHUD();
+        $('quiz-panel').classList.remove('hidden');
+        loadQuestion(0);
+      }
+
+      async function beginSolo() {
+        initAudio();
+        if (!requireSupabase()) return;
+        const button = $('start-btn');
+        setBusy(button, true, 'LOADING...');
+        const data = await getQuestions();
+        if (data) {
+          allQuestions = data;
+          currentQuestions = shuffleArray([...allQuestions]).slice(0, TOTAL_ROUNDS);
+          isMultiplayer = false;
+          $('multi-badge').style.display = 'none';
+          resetGameState();
+          showHUD();
+          $('quiz-panel').classList.remove('hidden');
+          closeModal('start-modal');
+          loadQuestion(0);
+          playSound('success');
+        }
+        setBusy(button, false, '1P 혼자하기');
+      }
+
+      async function beginMultiplayer() {
+        initAudio();
+        if (!requireSupabase()) return;
+        const button = $('multi-btn');
+        setBusy(button, true, 'CREATING...');
+        const data = await getQuestions();
+        if (!data) {
+          setBusy(button, false, '2P 대결하기');
+          return;
+        }
+        isMultiplayer = true;
+        myRole = 'host';
+        roomCode = generateRoomCode();
+        currentQuestions = shuffleArray([...data]).slice(0, TOTAL_ROUNDS);
+        const { error } = await supabaseClient.from('geopinder_rooms').insert([{ room_id: roomCode, questions: currentQuestions }]);
+        if (error) {
+          showToast('대결방을 만들지 못했습니다. 데이터 권한을 확인하세요.', 'error');
+          isMultiplayer = false;
+          setBusy(button, false, '2P 대결하기');
+          return;
+        }
+        const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+        $('invite-link').value = inviteUrl;
+        showModal('waiting-modal');
+        setupRealtimeChannel();
+        playSound('success');
+        setBusy(button, false, '2P 대결하기');
+      }
+
+      async function joinRoomAsGuest() {
+        initAudio();
+        if (!requireSupabase()) return;
+        showModal('waiting-modal');
+        $('wait-msg').textContent = '방 정보를 확인하는 중입니다.';
+        const { data, error } = await supabaseClient.from('geopinder_rooms').select('*').eq('room_id', roomCode).single();
+        if (error || !data?.questions) {
+          showToast('존재하지 않거나 만료된 방입니다.', 'error');
+          showModal('start-modal');
+          return;
+        }
+        currentQuestions = data.questions;
+        $('wait-msg').textContent = '호스트가 게임을 시작하기를 기다리는 중입니다.';
+        setupRealtimeChannel();
+      }
+
+      async function loadRankings() {
+        const rankContainer = $('ranking-list');
+        if (!supabaseClient) {
+          rankContainer.textContent = 'Supabase를 설정하면 글로벌 랭킹이 표시됩니다.';
+          return;
+        }
+        const { data, error } = await supabaseClient.from('geopinder_rankings').select('*').order('score', { ascending: false }).limit(5);
+        if (error) {
+          rankContainer.textContent = '랭킹을 불러오지 못했습니다.';
+          return;
+        }
+        if (!data?.length) {
+          rankContainer.textContent = '첫 기록의 주인공이 되어보세요!';
+          return;
+        }
+        rankContainer.replaceChildren(...data.map((row, index) => {
+          const item = document.createElement('div');
+          item.className = `ranking-row${index === 0 ? ' ranking-row--first' : ''}`;
+          const initials = document.createElement('span');
+          initials.textContent = `${index + 1}. ${String(row.initials || '---').slice(0, 3)}`;
+          const score = document.createElement('span');
+          score.textContent = Number(row.score || 0).toString().padStart(5, '0');
+          item.append(initials, score);
+          return item;
+        }));
+      }
+
+      async function saveRanking() {
+        initAudio();
+        if (!requireSupabase()) return;
+        const initials = $('initials-input').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (initials.length !== 3) {
+          showToast('이니셜은 영문 또는 숫자 3글자로 입력하세요.', 'error');
+          return;
+        }
+        const button = $('save-rank-btn');
+        setBusy(button, true, 'SAVING...');
+        const { error } = await supabaseClient.from('geopinder_rankings').insert([{ initials, score: totalScore }]);
+        if (error) {
+          showToast('랭킹 저장에 실패했습니다. 권한을 확인하세요.', 'error');
+          setBusy(button, false, '랭킹 등록');
+          return;
+        }
+        playSound('success');
+        showToast('랭킹 등록이 완료되었습니다!');
+        window.setTimeout(() => window.location.assign(window.location.pathname), 900);
+      }
+
+      function shareGame(includeScore = false) {
+        initAudio();
+        playSound('pin');
+        const scoreText = includeScore ? `\n내 점수: ${totalScore.toString().padStart(5, '0')}점!` : '';
+        const text = `GeoPinder Arcade${scoreText}\n3D 지구본에서 세계 랜드마크 찾기에 도전해보세요!`;
+        const data = { title: 'GeoPinder Arcade', text, url: `${window.location.origin}${window.location.pathname}` };
+        if (navigator.share) navigator.share(data).catch(() => {});
+        else navigator.clipboard?.writeText(`${text}\n${data.url}`).then(() => showToast('게임 링크가 복사되었습니다.'));
+      }
+
+      document.querySelectorAll('.donate-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+          initAudio();
+          playSound('success');
+          showToast('후원해주셔서 감사합니다. 현재는 데모 버튼입니다.');
+        });
+      });
+
+      document.querySelectorAll('.diff-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+          currentDifficulty = button.dataset.diff;
+          document.querySelectorAll('.diff-btn').forEach((diffButton) => {
+            const selected = diffButton === button;
+            diffButton.classList.toggle('is-selected', selected);
+            diffButton.setAttribute('aria-pressed', String(selected));
+          });
+          initAudio();
+          playSound('pin');
+        });
+      });
+
+      $('start-btn').addEventListener('click', beginSolo);
+      $('multi-btn').addEventListener('click', beginMultiplayer);
+      $('copy-link-btn').addEventListener('click', () => {
+        initAudio();
+        playSound('pin');
+        navigator.clipboard?.writeText($('invite-link').value).then(() => showToast('링크가 복사되었습니다. 친구에게 보내세요.'));
+      });
+      $('submit-btn').addEventListener('click', submitGuess);
+      $('next-btn').addEventListener('click', () => {
+        initAudio();
+        playSound('pin');
+        if (isMultiplayer && myRole === 'host') roomChannel?.send({ type: 'broadcast', event: 'next_round', payload: {} });
+        proceedToNextRound();
+      });
+      $('save-rank-btn').addEventListener('click', saveRanking);
+      $('start-share-btn').addEventListener('click', () => shareGame(false));
+      $('gameover-share-btn').addEventListener('click', () => shareGame(true));
+      $('initials-input').addEventListener('input', (event) => {
+        event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+      });
+
+      initializeGlobe();
+      loadRankings();
+      const roomParam = new URLSearchParams(window.location.search).get('room');
+      if (roomParam) {
+        isMultiplayer = true;
+        myRole = 'guest';
+        roomCode = roomParam.toUpperCase().slice(0, 12);
+        joinRoomAsGuest();
+      }
+    })();
+  </script>
+</body>
+</html>
