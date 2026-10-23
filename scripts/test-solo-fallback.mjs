@@ -111,6 +111,12 @@ try {
   await client.send('Page.enable');
   await client.send('Runtime.enable');
   await waitFor('3D globe and 1P start button', async () => evaluate(client, `Boolean(document.querySelector('#globeViz canvas') && document.getElementById('start-btn'))`));
+  await evaluate(client, `localStorage.setItem('geopinder.playerInitials.v1', 'g9p'); location.reload()`);
+  await waitFor('remembered initials after reload', async () => evaluate(client, `(() => {
+    const input = document.getElementById('initials-input');
+    const note = document.getElementById('initials-memory-note');
+    return Boolean(document.querySelector('#globeViz canvas')) && input.value === 'G9P' && note.hidden === false;
+  })()`));
 
   if (!Object.hasOwn({ easy: null, normal: 20, hard: 10 }, testDifficulty)) {
     throw new Error(`Unsupported GEOPINDER_TEST_DIFFICULTY: ${testDifficulty}`);
@@ -158,6 +164,11 @@ try {
       throw new Error(`${testDifficulty} timer must start near ${expectedTimerSeconds}, received: ${JSON.stringify(timerState)}`);
     }
     await waitFor(`${testDifficulty} timer decrement`, async () => evaluate(client, `Number(document.getElementById('time-display').textContent) < ${expectedTimerSeconds}`));
+  }
+
+  if (process.env.GEOPINDER_TEST_START_SCREENSHOT) {
+    const screenshot = await client.send('Page.captureScreenshot', { format: 'png' });
+    await writeFile(process.env.GEOPINDER_TEST_START_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
   }
 
   let completionMessage;

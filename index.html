@@ -408,6 +408,12 @@
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
+    .initials-memory-note {
+      margin: 9px 0 0 !important;
+      color: var(--muted) !important;
+      font-size: 13px !important;
+      line-height: 1.35;
+    }
 
     .score-highlight {
       display: block;
@@ -676,6 +682,7 @@
         <label for="initials-input"><span class="visually-hidden">랭킹에 표시할 이니셜</span>ENTER INITIALS</label><br>
         <input id="initials-input" class="input-field" type="text" maxlength="3" autocomplete="off" placeholder="AAA" aria-describedby="initials-help"><br>
         <span id="initials-help" class="visually-hidden">영문 또는 숫자 세 글자를 입력하세요.</span>
+        <p id="initials-memory-note" class="initials-memory-note" hidden>이 기기에서 마지막 이니셜을 자동 입력했습니다.</p>
         <div class="button-row" style="margin-top:20px">
           <button id="save-rank-btn" class="btn btn-red" type="button">랭킹 등록</button>
           <button id="gameover-share-btn" class="btn btn-blue" type="button">자랑하기</button>
@@ -719,6 +726,9 @@
         : null;
 
       const TOTAL_ROUNDS = 5;
+      const INITIALS_STORAGE_KEY = 'geopinder.playerInitials.v1';
+      const GAMEPLAY_START_ALTITUDE = 1.8;
+      const GAMEPLAY_MIN_DISTANCE_RATIO = 1.1;
       const ROUND_SECONDS_BY_DIFFICULTY = Object.freeze({
         easy: null,
         normal: 20,
@@ -726,6 +736,31 @@
       });
       const $ = (id) => document.getElementById(id);
       const modals = ['start-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
+
+      function normalizeInitials(value) {
+        return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+      }
+
+      function restoreSavedInitials() {
+        try {
+          const initials = normalizeInitials(window.localStorage.getItem(INITIALS_STORAGE_KEY));
+          if (initials.length !== 3) return;
+          $('initials-input').value = initials;
+          $('initials-memory-note').hidden = false;
+        } catch {
+          // Private browsing or blocked storage should not prevent play.
+        }
+      }
+
+      function rememberInitials(initials) {
+        try {
+          window.localStorage.setItem(INITIALS_STORAGE_KEY, initials);
+          $('initials-memory-note').textContent = '이 기기에서 다음 랭킹 등록에도 자동 입력됩니다.';
+          $('initials-memory-note').hidden = false;
+        } catch {
+          // Storage is a convenience feature only; ranking success must remain valid without it.
+        }
+      }
 
       function createDemoArtwork(title, accent) {
         const safeTitle = String(title).replace(/[&<>"']/g, '');
@@ -1030,6 +1065,16 @@
         window.addEventListener('resize', () => myGlobe.width(window.innerWidth).height(window.innerHeight));
       }
 
+      function focusGameplayGlobe() {
+        if (!myGlobe) return;
+        const globeRadius = myGlobe.getGlobeRadius();
+        const controls = myGlobe.controls();
+        const minDistance = globeRadius * GAMEPLAY_MIN_DISTANCE_RATIO;
+        controls.minDistance = minDistance;
+        controls.maxDistance = Math.max(controls.maxDistance, globeRadius * 4);
+        myGlobe.pointOfView({ lat: 20, lng: 0, altitude: GAMEPLAY_START_ALTITUDE }, 0);
+      }
+
       function updateMapPins() {
         if (!myGlobe) return;
         const pins = [];
@@ -1321,6 +1366,7 @@
         resetRematchState();
         showHUD();
         $('quiz-panel').classList.remove('hidden');
+        focusGameplayGlobe();
         loadQuestion(0);
       }
 
@@ -1342,6 +1388,7 @@
           showHUD();
           $('quiz-panel').classList.remove('hidden');
           closeModal('start-modal');
+          focusGameplayGlobe();
           loadQuestion(0);
           playSound('success');
           if (isDemoMode) showToast('DEMO MODE: Supabase 없이 1P 플래그 배치를 테스트합니다.');
@@ -1430,7 +1477,7 @@
       async function saveRanking() {
         initAudio();
         if (!requireSupabase()) return;
-        const initials = $('initials-input').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const initials = normalizeInitials($('initials-input').value);
         if (initials.length !== 3) {
           showToast('이니셜은 영문 또는 숫자 3글자로 입력하세요.', 'error');
           return;
@@ -1443,6 +1490,7 @@
           setBusy(button, false, '랭킹 등록');
           return;
         }
+        rememberInitials(initials);
         playSound('success');
         showToast('랭킹 등록이 완료되었습니다!');
         if (isMultiplayer) {
@@ -1498,10 +1546,11 @@
       $('start-share-btn').addEventListener('click', () => shareGame(false));
       $('gameover-share-btn').addEventListener('click', () => shareGame(true));
       $('initials-input').addEventListener('input', (event) => {
-        event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+        event.target.value = normalizeInitials(event.target.value);
       });
 
       initializeGlobe();
+      restoreSavedInitials();
       loadRankings();
       const roomParam = new URLSearchParams(window.location.search).get('room');
       if (roomParam) {

@@ -18,6 +18,7 @@ const submitGuessBody = index.match(/function submitGuess\([^)]*\)\s*\{([\s\S]*?
 const showRoundResultBody = index.match(/function showRoundResult\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function proceedToNextRound\(\)/)?.[1] || '';
 const startTimerBody = index.match(/function startTimer\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function stopTimer\(\)/)?.[1] || '';
 const saveRankingBody = index.match(/async function saveRanking\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function shareGame\(/)?.[1] || '';
+const focusGameplayGlobeBody = index.match(/function focusGameplayGlobe\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function updateMapPins\(\)/)?.[1] || '';
 
 function expect(condition, message) {
   if (!condition) failures.push(message);
@@ -67,6 +68,11 @@ expect(/let currentMatchId\s*=/.test(index) && /let gamePhase\s*=/.test(index), 
 expect(/event:\s*'rematch_vote'/.test(index) && /event:\s*'rematch_start'/.test(index), '재대결에는 rematch_vote와 rematch_start Realtime 이벤트가 필요합니다.');
 expect(/matchId:\s*currentMatchId/.test(index), '2P gameplay payload는 현재 matchId를 포함해야 합니다.');
 expect(/if \(isMultiplayer\) \{[\s\S]*?랭킹 등록 완료[\s\S]*?return;/.test(saveRankingBody), '2P 랭킹 저장 후에는 페이지를 새로고침하지 않고 재대결 화면을 유지해야 합니다.');
+expect(/const INITIALS_STORAGE_KEY\s*=\s*['"]geopinder\.playerInitials\.v1['"]/.test(index), '등록 이니셜을 기억할 버전 있는 localStorage key가 필요합니다.');
+expect(/function restoreSavedInitials\(\)/.test(index) && /function rememberInitials\(initials\)/.test(index), '이니셜 저장·복원 함수가 필요합니다.');
+expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInitials\(\)/.test(index), '성공한 랭킹 등록 뒤 저장하고 페이지 초기화 시 이니셜을 복원해야 합니다.');
+expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
+expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');
