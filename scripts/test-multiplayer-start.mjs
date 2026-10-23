@@ -200,6 +200,7 @@ try {
   const host = await openPage(browserUrl, siteUrl);
   await waitFor('host 2P button', async () => evaluate(host, `Boolean(document.getElementById('multi-btn'))`));
   await installErrorCollector(host);
+  if (expectHostNoSelection) await evaluate(host, `document.querySelector('.diff-btn[data-diff="hard"]').click()`);
   await evaluate(host, `document.getElementById('multi-btn').click()`);
 
   const inviteUrl = await waitFor('host invite link', async () => evaluate(host, `(() => {
@@ -229,6 +230,10 @@ try {
   }
 
   if (expectHostNoSelection) {
+    const timerValues = await Promise.all([host, guest].map((client) => evaluate(client, `Number(document.getElementById('time-display').textContent)`)));
+    if (timerValues.some((value) => value > 10 || value < 9)) {
+      throw new Error(`Hard multiplayer timer must start near 10 seconds: ${JSON.stringify(timerValues)}`);
+    }
     const guestPoint = await evaluate(guest, `(() => ({ x: innerWidth / 2, y: innerHeight / 2 }))()`);
     await dispatchClick(guest, guestPoint.x, guestPoint.y);
     await waitFor('guest pin placement', async () => evaluate(guest, `document.getElementById('submit-btn').disabled === false`));

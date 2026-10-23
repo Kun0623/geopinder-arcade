@@ -570,9 +570,9 @@
         </div>
         <div class="difficulty-label">난이도 선택 (Difficulty)</div>
         <div id="difficulty-select" class="difficulty-select" aria-label="난이도 선택">
-          <button class="btn diff-btn is-selected" type="button" data-diff="easy" aria-pressed="true">초급</button>
-          <button class="btn diff-btn btn-red" type="button" data-diff="normal" aria-pressed="false">중급</button>
-          <button class="btn diff-btn btn-yellow" type="button" data-diff="hard" aria-pressed="false">고급</button>
+          <button class="btn diff-btn is-selected" type="button" data-diff="easy" aria-pressed="true">초급 · 제한 없음</button>
+          <button class="btn diff-btn btn-red" type="button" data-diff="normal" aria-pressed="false">중급 · 20초</button>
+          <button class="btn diff-btn btn-yellow" type="button" data-diff="hard" aria-pressed="false">고급 · 10초</button>
         </div>
         <div class="button-row">
           <button id="start-btn" class="btn btn-red" type="button">1P 혼자하기</button>
@@ -628,6 +628,9 @@
           <button id="save-rank-btn" class="btn btn-red" type="button">랭킹 등록</button>
           <button id="gameover-share-btn" class="btn btn-blue" type="button">자랑하기</button>
         </div>
+        <div class="button-row">
+          <button id="rematch-btn" class="btn btn-yellow" type="button" hidden>한판 더하기</button>
+        </div>
         <div class="button-row button-row--stack">
           <button class="btn donate-btn btn-yellow" type="button">재미있었다면 커피 사주기</button>
         </div>
@@ -662,7 +665,11 @@
         : null;
 
       const TOTAL_ROUNDS = 5;
-      const ROUND_SECONDS = 20;
+      const ROUND_SECONDS_BY_DIFFICULTY = Object.freeze({
+        easy: null,
+        normal: 20,
+        hard: 10
+      });
       const $ = (id) => document.getElementById(id);
       const modals = ['start-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
 
@@ -695,12 +702,15 @@
       let roomCode = null;
       let roomChannel = null;
       let myRole = 'host';
+      let currentMatchId = 1;
+      let gamePhase = 'lobby';
+      let rematchVotes = { host: false, guest: false };
       let myGuessSubmitted = false;
       let oppGuessSubmitted = false;
       let timerInterval = null;
       let resultRevealTimer = null;
       let adInterval = null;
-      let timeLeft = ROUND_SECONDS;
+      let timeLeft = null;
       let audioCtx = null;
       let myGlobe = null;
 
@@ -812,12 +822,40 @@
         $('score-display').textContent = totalScore.toString().padStart(5, '0');
       }
 
+      function getRoundSeconds(difficulty = currentDifficulty) {
+        return Object.hasOwn(ROUND_SECONDS_BY_DIFFICULTY, difficulty) ? ROUND_SECONDS_BY_DIFFICULTY[difficulty] : null;
+      }
+
+      function renderTimer(seconds) {
+        const timer = $('hud-timer');
+        const isTimed = Number.isFinite(seconds);
+        timer.style.visibility = isTimed ? 'visible' : 'hidden';
+        timer.setAttribute('aria-hidden', String(!isTimed));
+        if (!isTimed) return;
+        $('time-display').textContent = seconds;
+        $('time-display').style.color = seconds <= 5 ? 'var(--pink)' : 'var(--gold)';
+      }
+
+      function setDifficulty(difficulty) {
+        if (!Object.hasOwn(ROUND_SECONDS_BY_DIFFICULTY, difficulty)) return;
+        currentDifficulty = difficulty;
+        document.querySelectorAll('.diff-btn').forEach((button) => {
+          const selected = button.dataset.diff === difficulty;
+          button.classList.toggle('is-selected', selected);
+          button.setAttribute('aria-pressed', String(selected));
+        });
+        if (!$('quiz-panel').classList.contains('hidden')) renderTimer(getRoundSeconds());
+      }
+
       function showHUD() {
-        $('hud-timer').style.visibility = 'visible';
         $('hud-stats').style.visibility = 'visible';
+        renderTimer(getRoundSeconds());
       }
 
       function resetGameState() {
+        stopTimer();
+        clearTimeout(resultRevealTimer);
+        resultRevealTimer = null;
         currentRound = 1;
         totalScore = 0;
         currentPin = null;
@@ -829,15 +867,35 @@
         updateHUD();
       }
 
+      function resetRematchState() {
+        rematchVotes = { host: false, guest: false };
+        const rematchButton = $('rematch-btn');
+        rematchButton.hidden = true;
+        rematchButton.disabled = false;
+        rematchButton.textContent = '한판 더하기';
+      }
+
+      function prepareRematchUI() {
+        const rematchButton = $('rematch-btn');
+        rematchButton.hidden = !isMultiplayer;
+        rematchButton.disabled = false;
+        rematchButton.textContent = '한판 더하기';
+        rematchVotes = { host: false, guest: false };
+      }
+
       function startTimer() {
-        clearInterval(timerInterval);
-        timeLeft = ROUND_SECONDS;
-        $('time-display').textContent = timeLeft;
-        $('time-display').style.color = 'var(--gold)';
+        stopTimer();
+        const roundSeconds = getRoundSeconds();
+        if (roundSeconds === null) {
+          timeLeft = null;
+          renderTimer(null);
+          return;
+        }
+        timeLeft = roundSeconds;
+        renderTimer(timeLeft);
         timerInterval = window.setInterval(() => {
           timeLeft -= 1;
-          $('time-display').textContent = timeLeft;
-          if (timeLeft === 5) $('time-display').style.color = 'var(--pink)';
+          renderTimer(timeLeft);
           if (timeLeft <= 5 && timeLeft > 0) playSound('pin');
           if (timeLeft <= 0) {
             stopTimer();
@@ -925,7 +983,7 @@
         updateMapPins();
         $('submit-btn').disabled = false;
         if (isMultiplayer && roomChannel) {
-          roomChannel.send({ type: 'broadcast', event: 'pin_move', payload: { lat, lng } });
+          roomChannel.send({ type: 'broadcast', event: 'pin_move', payload: { matchId: currentMatchId, round: currentRound, lat, lng } });
         }
       }
 
@@ -982,7 +1040,7 @@
         if (isMultiplayer) {
           $('submit-btn').textContent = hasSelection ? '제출 완료!' : '선택 안 함 · 0점';
           $('sync-msg').style.display = 'block';
-          roomChannel?.send({ type: 'broadcast', event: 'guess_submit', payload: { noGuess: !currentPin, lat: currentPin?.lat ?? null, lng: currentPin?.lng ?? null, round: currentRound } });
+          roomChannel?.send({ type: 'broadcast', event: 'guess_submit', payload: { matchId: currentMatchId, noGuess: !currentPin, lat: currentPin?.lat ?? null, lng: currentPin?.lng ?? null, round: currentRound } });
           checkRoundComplete();
         } else {
           if (!hasSelection) $('submit-btn').textContent = '선택 안 함 · 0점';
@@ -1076,9 +1134,11 @@
           $('ad-timer-span').textContent = adTime;
           if (adTime <= 0) {
             clearInterval(adInterval);
+            gamePhase = isMultiplayer ? 'post_game' : gamePhase;
             $('final-score').textContent = totalScore.toString().padStart(5, '0');
             $('save-rank-btn').disabled = false;
             $('save-rank-btn').textContent = '랭킹 등록';
+            prepareRematchUI();
             showModal('gameover-modal');
           }
         }, 1000);
@@ -1088,32 +1148,68 @@
         return Math.random().toString(36).slice(2, 6).toUpperCase();
       }
 
+      function selectRematchQuestions() {
+        const source = allQuestions.length >= TOTAL_ROUNDS ? allQuestions : currentQuestions;
+        return shuffleArray([...source]).slice(0, TOTAL_ROUNDS);
+      }
+
+      function startRematch(payload) {
+        if (!payload || payload.previousMatchId !== currentMatchId || !Array.isArray(payload.questions) || payload.questions.length < TOTAL_ROUNDS) return;
+        if (payload.difficulty) setDifficulty(payload.difficulty);
+        startGameMulti({ questions: payload.questions, matchId: payload.matchId });
+        showToast('재대결 시작! 이번 판도 행운을 빕니다.');
+      }
+
+      function maybeStartRematch() {
+        if (myRole !== 'host' || !rematchVotes.host || !rematchVotes.guest) return;
+        const nextMatchId = currentMatchId + 1;
+        const payload = {
+          previousMatchId: currentMatchId,
+          matchId: nextMatchId,
+          difficulty: currentDifficulty,
+          questions: selectRematchQuestions()
+        };
+        roomChannel?.send({ type: 'broadcast', event: 'rematch_start', payload });
+        startRematch(payload);
+      }
+
+      function requestRematch() {
+        if (!isMultiplayer || !roomChannel || (gamePhase !== 'post_game' && gamePhase !== 'rematch_wait') || rematchVotes[myRole]) return;
+        rematchVotes[myRole] = true;
+        gamePhase = 'rematch_wait';
+        $('rematch-btn').disabled = true;
+        $('rematch-btn').textContent = '상대방 대기 중...';
+        roomChannel.send({ type: 'broadcast', event: 'rematch_vote', payload: { matchId: currentMatchId, role: myRole } });
+        showToast('재대결 의사를 보냈습니다. 상대방을 기다립니다.');
+        maybeStartRematch();
+      }
+
       function setupRealtimeChannel() {
         if (!supabaseClient || !roomCode) return;
         roomChannel?.unsubscribe();
         roomChannel = supabaseClient.channel(`room_${roomCode}`);
         roomChannel
           .on('broadcast', { event: 'guest_joined' }, () => {
-            if (myRole === 'host') {
-              roomChannel.send({ type: 'broadcast', event: 'game_start', payload: { difficulty: currentDifficulty } });
+            if (myRole === 'host' && gamePhase === 'lobby') {
+              roomChannel.send({ type: 'broadcast', event: 'game_start', payload: { matchId: currentMatchId, difficulty: currentDifficulty } });
               showToast('친구가 접속했습니다! 게임을 시작합니다.');
-              startGameMulti();
+              startGameMulti({ matchId: currentMatchId });
             }
           })
           .on('broadcast', { event: 'game_start' }, ({ payload }) => {
-            if (myRole === 'guest') {
-              if (payload?.difficulty) currentDifficulty = payload.difficulty;
-              startGameMulti();
+            if (myRole === 'guest' && gamePhase === 'lobby' && Number.isInteger(payload?.matchId)) {
+              if (payload?.difficulty) setDifficulty(payload.difficulty);
+              startGameMulti({ matchId: payload.matchId });
             }
           })
           .on('broadcast', { event: 'pin_move' }, ({ payload }) => {
-            if (!isResultShown && payload && Number.isFinite(payload.lat) && Number.isFinite(payload.lng)) {
+            if (gamePhase === 'playing' && !isResultShown && payload?.matchId === currentMatchId && payload.round === currentRound && Number.isFinite(payload.lat) && Number.isFinite(payload.lng)) {
               opponentPin = { lat: payload.lat, lng: payload.lng, name: myRole === 'host' ? '2P' : '1P', color: '#00ffff', type: 'guess' };
               updateMapPins();
             }
           })
           .on('broadcast', { event: 'guess_submit' }, ({ payload }) => {
-            if (payload && payload.round === currentRound) {
+            if (gamePhase === 'playing' && payload?.matchId === currentMatchId && payload.round === currentRound) {
               const noGuess = payload.noGuess === true;
               const hasCoordinates = Number.isFinite(payload.lat) && Number.isFinite(payload.lng);
               if (!noGuess && !hasCoordinates) return;
@@ -1123,7 +1219,18 @@
               checkRoundComplete();
             }
           })
-          .on('broadcast', { event: 'next_round' }, () => proceedToNextRound())
+          .on('broadcast', { event: 'next_round' }, ({ payload }) => {
+            if (gamePhase === 'playing' && payload?.matchId === currentMatchId && payload.round === currentRound) proceedToNextRound();
+          })
+          .on('broadcast', { event: 'rematch_vote' }, ({ payload }) => {
+            if (!payload || payload.matchId !== currentMatchId || !['host', 'guest'].includes(payload.role) || (gamePhase !== 'post_game' && gamePhase !== 'rematch_wait')) return;
+            rematchVotes[payload.role] = true;
+            showToast('상대방이 한판 더하기를 선택했습니다.');
+            maybeStartRematch();
+          })
+          .on('broadcast', { event: 'rematch_start' }, ({ payload }) => {
+            if (gamePhase === 'post_game' || gamePhase === 'rematch_wait') startRematch(payload);
+          })
           .subscribe((status) => {
             if (status === 'SUBSCRIBED' && myRole === 'guest') {
               roomChannel.send({ type: 'broadcast', event: 'guest_joined', payload: {} });
@@ -1134,10 +1241,17 @@
           });
       }
 
-      function startGameMulti() {
+      function startGameMulti({ questions = null, matchId = currentMatchId } = {}) {
+        if (Array.isArray(questions) && questions.length >= TOTAL_ROUNDS) currentQuestions = questions;
+        if (Number.isInteger(matchId) && matchId > 0) currentMatchId = matchId;
+        gamePhase = 'playing';
         closeModal('waiting-modal');
+        closeModal('result-modal');
+        closeModal('ad-modal');
+        closeModal('gameover-modal');
         $('multi-badge').style.display = 'inline';
         resetGameState();
+        resetRematchState();
         showHUD();
         $('quiz-panel').classList.remove('hidden');
         loadQuestion(0);
@@ -1153,8 +1267,11 @@
           allQuestions = data;
           currentQuestions = shuffleArray([...allQuestions]).slice(0, TOTAL_ROUNDS);
           isMultiplayer = false;
+          gamePhase = 'solo';
+          currentMatchId = 1;
           $('multi-badge').style.display = 'none';
           resetGameState();
+          resetRematchState();
           showHUD();
           $('quiz-panel').classList.remove('hidden');
           closeModal('start-modal');
@@ -1177,8 +1294,12 @@
         }
         isMultiplayer = true;
         myRole = 'host';
+        gamePhase = 'lobby';
+        currentMatchId = 1;
+        rematchVotes = { host: false, guest: false };
         roomCode = generateRoomCode();
-        currentQuestions = shuffleArray([...data]).slice(0, TOTAL_ROUNDS);
+        allQuestions = data;
+        currentQuestions = shuffleArray([...allQuestions]).slice(0, TOTAL_ROUNDS);
         const { error } = await supabaseClient.from('geopinder_rooms').insert([{ room_id: roomCode, questions: currentQuestions }]);
         if (error) {
           showToast('대결방을 만들지 못했습니다. 데이터 권한을 확인하세요.', 'error');
@@ -1205,6 +1326,8 @@
           showModal('start-modal');
           return;
         }
+        gamePhase = 'lobby';
+        currentMatchId = 1;
         currentQuestions = data.questions;
         $('wait-msg').textContent = '호스트가 게임을 시작하기를 기다리는 중입니다.';
         setupRealtimeChannel();
@@ -1255,6 +1378,10 @@
         }
         playSound('success');
         showToast('랭킹 등록이 완료되었습니다!');
+        if (isMultiplayer) {
+          setBusy(button, true, '랭킹 등록 완료');
+          return;
+        }
         window.setTimeout(() => window.location.assign(window.location.pathname), 900);
       }
 
@@ -1278,12 +1405,7 @@
 
       document.querySelectorAll('.diff-btn').forEach((button) => {
         button.addEventListener('click', () => {
-          currentDifficulty = button.dataset.diff;
-          document.querySelectorAll('.diff-btn').forEach((diffButton) => {
-            const selected = diffButton === button;
-            diffButton.classList.toggle('is-selected', selected);
-            diffButton.setAttribute('aria-pressed', String(selected));
-          });
+          setDifficulty(button.dataset.diff);
           initAudio();
           playSound('pin');
         });
@@ -1300,10 +1422,11 @@
       $('next-btn').addEventListener('click', () => {
         initAudio();
         playSound('pin');
-        if (isMultiplayer && myRole === 'host') roomChannel?.send({ type: 'broadcast', event: 'next_round', payload: {} });
+        if (isMultiplayer && myRole === 'host') roomChannel?.send({ type: 'broadcast', event: 'next_round', payload: { matchId: currentMatchId, round: currentRound } });
         proceedToNextRound();
       });
       $('save-rank-btn').addEventListener('click', saveRanking);
+      $('rematch-btn').addEventListener('click', requestRematch);
       $('start-share-btn').addEventListener('click', () => shareGame(false));
       $('gameover-share-btn').addEventListener('click', () => shareGame(true));
       $('initials-input').addEventListener('input', (event) => {

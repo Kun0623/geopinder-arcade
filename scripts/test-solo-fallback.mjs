@@ -7,6 +7,8 @@ const siteUrl = process.env.GEOPINDER_TEST_URL || 'http://127.0.0.1:4173/';
 const chromeBin = process.env.CHROME_BIN || 'chromium';
 const debugPort = 9300 + (process.pid % 500);
 const expectNoSelection = process.env.GEOPINDER_TEST_EXPECT_NO_SELECTION === '1';
+const testDifficulty = process.env.GEOPINDER_TEST_DIFFICULTY || (expectNoSelection ? 'hard' : 'easy');
+const expectedTimerSeconds = { easy: null, normal: 20, hard: 10 }[testDifficulty];
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-cdp-'));
 let chrome;
 let ws;
@@ -110,6 +112,10 @@ try {
   await client.send('Runtime.enable');
   await waitFor('3D globe and 1P start button', async () => evaluate(client, `Boolean(document.querySelector('#globeViz canvas') && document.getElementById('start-btn'))`));
 
+  if (!Object.hasOwn({ easy: null, normal: 20, hard: 10 }, testDifficulty)) {
+    throw new Error(`Unsupported GEOPINDER_TEST_DIFFICULTY: ${testDifficulty}`);
+  }
+  await evaluate(client, `document.querySelector('.diff-btn[data-diff="${testDifficulty}"]').click()`);
   // 라운드 시작은 DOM 클릭으로 고정하고, 실제 회귀 대상인 3D 캔버스의 포인터 입력은 아래에서 CDP 마우스 이벤트로 검증한다.
   await evaluate(client, `document.getElementById('start-btn').click()`);
 
@@ -131,6 +137,26 @@ try {
       toasts: [...document.querySelectorAll('.toast')].map((node) => node.textContent)
     }))()`);
     throw new Error(`${error.message} | diagnostics=${JSON.stringify(diagnostics)}`);
+  }
+
+  const timerState = await evaluate(client, `(() => {
+    const timer = document.getElementById('hud-timer');
+    return {
+      value: document.getElementById('time-display').textContent,
+      visibility: getComputedStyle(timer).visibility,
+      ariaHidden: timer.getAttribute('aria-hidden')
+    };
+  })()`);
+  if (expectedTimerSeconds === null) {
+    if (timerState.visibility !== 'hidden' || timerState.ariaHidden !== 'true') {
+      throw new Error(`Easy mode must hide the timer, received: ${JSON.stringify(timerState)}`);
+    }
+  } else {
+    const initialTimerValue = Number(timerState.value);
+    if (timerState.visibility !== 'visible' || timerState.ariaHidden !== 'false' || initialTimerValue > expectedTimerSeconds || initialTimerValue < expectedTimerSeconds - 1) {
+      throw new Error(`${testDifficulty} timer must start near ${expectedTimerSeconds}, received: ${JSON.stringify(timerState)}`);
+    }
+    await waitFor(`${testDifficulty} timer decrement`, async () => evaluate(client, `Number(document.getElementById('time-display').textContent) < ${expectedTimerSeconds}`));
   }
 
   let completionMessage;
