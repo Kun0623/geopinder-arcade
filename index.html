@@ -1126,6 +1126,7 @@
       }
 
       function startGameMulti() {
+        closeModal('waiting-modal');
         $('multi-badge').style.display = 'inline';
         resetGameState();
         showHUD();
