@@ -6,6 +6,12 @@ config.local.js
 .DS_Store
 mobile-*.png
 
+# Server-only payment configuration (commit the template only)
+.env
+.env.local
+.env.*.local
+!.env.example
+
 # Logs
 *.log
 

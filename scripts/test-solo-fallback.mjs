@@ -9,6 +9,8 @@ const debugPort = 9300 + (process.pid % 500);
 const expectNoSelection = process.env.GEOPINDER_TEST_EXPECT_NO_SELECTION === '1';
 const testDifficulty = process.env.GEOPINDER_TEST_DIFFICULTY || (expectNoSelection ? 'hard' : 'easy');
 const expectedTimerSeconds = { easy: null, normal: 20, hard: 10 }[testDifficulty];
+const expectSupportModal = process.env.GEOPINDER_TEST_SUPPORT_MODAL === '1';
+const windowSize = process.env.GEOPINDER_TEST_WINDOW_SIZE || '1280,720';
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-cdp-'));
 let chrome;
 let ws;
@@ -91,7 +93,7 @@ try {
     '--no-sandbox',
     '--disable-gpu',
     '--hide-scrollbars',
-    '--window-size=1280,720',
+    `--window-size=${windowSize}`,
     `--remote-debugging-port=${debugPort}`,
     `--user-data-dir=${profileDir}`,
     'about:blank'
@@ -117,6 +119,42 @@ try {
     const note = document.getElementById('initials-memory-note');
     return Boolean(document.querySelector('#globeViz canvas')) && input.value === 'G9P' && note.hidden === false;
   })()`));
+
+  if (expectSupportModal) {
+    await evaluate(client, `document.querySelector('.donate-btn').click()`);
+    await waitFor('StepPay support modal', async () => evaluate(client, `document.getElementById('support-modal')?.classList.contains('is-open')`));
+    const supportLayout = await evaluate(client, `(() => {
+      const modal = document.getElementById('support-modal');
+      const card = modal.querySelector('.modal-card');
+      const title = document.getElementById('support-title');
+      const close = document.getElementById('support-close-btn');
+      const amount = card.querySelector('.support-amount');
+      const submit = document.getElementById('support-submit-btn');
+      const cardRect = card.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const closeRect = close.getBoundingClientRect();
+      return {
+        modalOpen: modal.classList.contains('is-open'),
+        startOpen: document.getElementById('start-modal').classList.contains('is-open'),
+        amount: amount.textContent.replace(/\\s+/g, ''),
+        submitText: submit.textContent.trim(),
+        cardTop: Math.round(cardRect.top),
+        cardBottom: Math.round(cardRect.bottom),
+        viewportHeight: innerHeight,
+        closeLeft: Math.round(closeRect.left),
+        titleRight: Math.round(titleRect.right)
+      };
+    })()`);
+    if (!supportLayout.modalOpen || supportLayout.startOpen || supportLayout.amount !== 'ONE-TIMESUPPORT₩5,000' || supportLayout.submitText !== '₩5,000 후원하고 결제하기' || supportLayout.cardTop < 0 || supportLayout.cardBottom > supportLayout.viewportHeight || supportLayout.closeLeft <= supportLayout.titleRight) {
+      throw new Error(`Unexpected StepPay support modal layout: ${JSON.stringify(supportLayout)}`);
+    }
+    if (process.env.GEOPINDER_TEST_SUPPORT_SCREENSHOT) {
+      const screenshot = await client.send('Page.captureScreenshot', { format: 'png' });
+      await writeFile(process.env.GEOPINDER_TEST_SUPPORT_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
+    }
+    await evaluate(client, `document.getElementById('support-close-btn').click()`);
+    await waitFor('start modal after support modal close', async () => evaluate(client, `document.getElementById('start-modal').classList.contains('is-open') && !document.getElementById('support-modal').classList.contains('is-open')`));
+  }
 
   if (!Object.hasOwn({ easy: null, normal: 20, hard: 10 }, testDifficulty)) {
     throw new Error(`Unsupported GEOPINDER_TEST_DIFFICULTY: ${testDifficulty}`);

@@ -52,6 +52,26 @@ node scripts/validate-static-site.mjs
 
 최초 배포에서 실제 Production URL이 확정된 다음 `index.html`의 canonical·Open Graph URL과 `sitemap.xml`의 `<loc>`을 그 URL로 고정해야 SEO 주소가 정확해집니다.
 
+## StepPay 5,000원 단건 후원
+
+게임의 `개발자 후원` 버튼은 이름·이메일·명시적 동의를 받은 뒤 같은 origin의 `POST /api/steppay/checkout`으로 요청합니다. Vercel Serverless Function은 StepPay 고객과 5,000원 단건 주문을 만들고, StepPay가 반환한 HTTPS 관리형 결제 페이지로만 연결합니다. 카드 정보는 게임 또는 Vercel 함수에서 수집·저장하지 않습니다.
+
+Vercel Production 환경변수에 다음 **서버 전용** 값을 등록하세요. 실제 `STEPPAY_SECRET_TOKEN`은 GitHub, `config.js`, `index.html`, 브라우저 콘솔에 절대 넣지 마세요.
+
+```text
+STEPPAY_SECRET_TOKEN=<StepPay Secret-Token>
+STEPPAY_PRODUCT_CODE=<product_...>
+STEPPAY_PRICE_CODE_5000=<price_...>
+```
+
+`.env.example`에는 자리표시자만 있습니다. 설정 전 checkout endpoint는 의도적으로 `503`을 반환합니다. 배포 뒤 빈 JSON을 포함한 요청이 `400`으로 제어되는지 먼저 확인하고, StepPay 결제창이 실제로 열리는 테스트를 완료한 뒤에만 StepPay 상품을 미게시에서 판매중으로 변경하세요. 이 프로젝트는 후원 혜택을 부여하지 않으므로 반환 URL을 결제 성공 권한으로 신뢰하지 않습니다.
+
+다음 테스트는 실제 StepPay를 호출하지 않고 고객·주문·결제 링크·동일 출처 검증 계약을 확인합니다.
+
+```bash
+node scripts/test-steppay-checkout.mjs
+```
+
 ## 파일 구조
 
 ```text
@@ -62,6 +82,9 @@ node scripts/validate-static-site.mjs
 ├── favicon.svg                   # GeoPinder 전용 파비콘
 ├── robots.txt / sitemap.xml      # 검색 노출 기본 파일
 ├── vercel.json                   # 정적 배포 및 보안 헤더
+├── api/steppay/checkout.mjs       # 서버 전용 StepPay checkout endpoint
+├── lib/steppay-checkout.mjs       # StepPay 요청·응답 검증 로직
+├── .env.example                   # 서버 환경변수 자리표시자
 └── scripts/validate-static-site.mjs
 ```
 

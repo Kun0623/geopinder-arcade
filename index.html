@@ -417,6 +417,43 @@
       line-height: 1.35;
     }
 
+    .support-card { position: relative; text-align: left; }
+    .support-card h2 { width: calc(100% - 74px); margin-right: 0; color: var(--gold); text-align: center; text-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+    .support-close {
+      position: absolute;
+      top: 13px;
+      right: 13px;
+      width: auto;
+      min-width: 38px;
+      min-height: 38px;
+      margin: 0;
+      padding: 6px;
+      border-color: var(--white);
+      color: var(--white);
+      box-shadow: 3px 3px 0 var(--white);
+      font-size: 15px;
+    }
+    .support-amount {
+      margin: 0 0 18px;
+      padding: 13px;
+      border: 2px dashed var(--gold);
+      color: var(--gold);
+      background: rgba(255, 215, 0, 0.08);
+      text-align: center;
+    }
+    .support-amount__label { display: block; color: var(--white); font-size: 13px; letter-spacing: 0.08em; }
+    .support-amount__value { display: block; margin-top: 5px; font-size: clamp(26px, 7vw, 36px); line-height: 1; text-shadow: 0 0 10px rgba(255, 215, 0, 0.55); }
+    .support-form { display: grid; gap: 12px; }
+    .support-form label { color: var(--white); font-size: 15px; line-height: 1.35; }
+    .support-form .input-field { margin-top: 5px; text-align: left; }
+    .support-consent { display: flex; gap: 9px; align-items: flex-start; padding: 10px; border: 1px solid #4f5a54; background: rgba(255, 255, 255, 0.035); }
+    .support-consent input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--gold); }
+    .support-consent span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .support-status { min-height: 1.5em; margin: 0 !important; color: var(--cyan) !important; font-size: 14px !important; line-height: 1.45 !important; }
+    .support-status[data-tone='error'] { color: var(--pink) !important; }
+    .support-status[data-tone='success'] { color: var(--green) !important; }
+    .support-footnote { margin: 14px 0 0 !important; color: var(--muted) !important; font-size: 12px !important; line-height: 1.45 !important; }
+
     .score-highlight {
       display: block;
       margin: 18px 0;
@@ -645,6 +682,33 @@
       </section>
     </div>
 
+    <div id="support-modal" class="modal" role="presentation" aria-hidden="true">
+      <section class="modal-card modal-card--gold support-card" role="dialog" aria-modal="true" aria-labelledby="support-title" aria-describedby="support-description">
+        <button id="support-close-btn" class="btn support-close" type="button" aria-label="후원 창 닫기">닫기</button>
+        <h2 id="support-title">INSERT COIN</h2>
+        <p id="support-description" class="modal-subtitle">GeoPinder Arcade 개발·운영 후원</p>
+        <div class="support-amount" aria-label="단건 후원 금액 5,000원">
+          <span class="support-amount__label">ONE-TIME SUPPORT</span>
+          <strong class="support-amount__value">₩5,000</strong>
+        </div>
+        <form id="support-form" class="support-form" novalidate>
+          <label for="supporter-name">이름
+            <input id="supporter-name" class="input-field" type="text" name="name" maxlength="80" autocomplete="name" required placeholder="후원자 이름">
+          </label>
+          <label for="supporter-email">이메일
+            <input id="supporter-email" class="input-field" type="email" name="email" maxlength="254" autocomplete="email" required placeholder="receipt@example.com">
+          </label>
+          <label class="support-consent" for="support-consent">
+            <input id="support-consent" type="checkbox" name="consent" required>
+            <span>결제 처리에 필요한 이름과 이메일이 StepPay에 전달됨을 확인했습니다. 카드 정보는 GeoPinder에 저장되지 않습니다.</span>
+          </label>
+          <p id="support-status" class="support-status" role="status" aria-live="polite" data-tone="info"></p>
+          <button id="support-submit-btn" class="btn btn-yellow" type="submit">₩5,000 후원하고 결제하기</button>
+        </form>
+        <p class="support-footnote">결제창은 StepPay의 안전한 페이지에서 새 탭으로 열립니다. 팝업이 차단되면 현재 탭으로 이동합니다.</p>
+      </section>
+    </div>
+
     <div id="waiting-modal" class="modal" role="presentation">
       <section class="modal-card modal-card--cyan" role="dialog" aria-modal="true" aria-labelledby="waiting-title">
         <h2 id="waiting-title" style="color:var(--cyan)">WAITING...</h2>
@@ -737,7 +801,7 @@
         hard: 10
       });
       const $ = (id) => document.getElementById(id);
-      const modals = ['start-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
+      const modals = ['start-modal', 'support-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
 
       function normalizeInitials(value) {
         return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
@@ -804,6 +868,7 @@
       let timeLeft = null;
       let audioCtx = null;
       let myGlobe = null;
+      let supportReturnModal = 'start-modal';
 
       function showModal(id) {
         modals.forEach((modalId) => {
@@ -884,6 +949,106 @@
       function setBusy(button, isBusy, label) {
         button.disabled = isBusy;
         if (label) button.textContent = label;
+      }
+
+      function setSupportStatus(message = '', tone = 'info') {
+        const status = $('support-status');
+        status.textContent = message;
+        status.dataset.tone = tone;
+      }
+
+      function openSupportModal() {
+        supportReturnModal = $('gameover-modal').classList.contains('is-open') ? 'gameover-modal' : 'start-modal';
+        $('support-form').reset();
+        setBusy($('support-submit-btn'), false, '₩5,000 후원하고 결제하기');
+        setSupportStatus('');
+        showModal('support-modal');
+      }
+
+      function closeSupportModal() {
+        showModal(supportReturnModal);
+      }
+
+      function closeCheckoutWindow(checkoutWindow) {
+        if (!checkoutWindow || checkoutWindow.closed) return;
+        try { checkoutWindow.close(); } catch { /* Popup close is best-effort only. */ }
+      }
+
+      async function beginSupportCheckout(event) {
+        event.preventDefault();
+        const form = $('support-form');
+        if (!form.reportValidity()) {
+          setSupportStatus('이름, 이메일, 결제 정보 전송 동의를 확인해 주세요.', 'error');
+          return;
+        }
+
+        initAudio();
+        playSound('pin');
+        const button = $('support-submit-btn');
+        const checkoutWindow = window.open('about:blank', '_blank');
+        if (checkoutWindow) {
+          try {
+            checkoutWindow.opener = null;
+            checkoutWindow.document.title = 'StepPay 결제 페이지를 준비하고 있습니다';
+          } catch { /* The checkout still falls back to this tab if the popup is unavailable. */ }
+        }
+
+        setBusy(button, true, '결제창 준비 중...');
+        setSupportStatus('StepPay 결제 페이지를 안전하게 준비하고 있습니다.');
+        try {
+          const response = await fetch('/api/steppay/checkout', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              name: $('supporter-name').value,
+              email: $('supporter-email').value,
+              consent: $('support-consent').checked
+            })
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || typeof data.checkoutUrl !== 'string') {
+            throw new Error(typeof data.message === 'string' ? data.message : '결제 페이지를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+          }
+          const checkoutUrl = new URL(data.checkoutUrl);
+          if (checkoutUrl.protocol !== 'https:') throw new Error('안전한 결제 페이지 주소를 확인하지 못했습니다.');
+
+          if (checkoutWindow && !checkoutWindow.closed) {
+            checkoutWindow.location.replace(checkoutUrl.toString());
+            setSupportStatus('결제창을 새 탭에서 열었습니다. 결제가 끝난 뒤 이 게임 탭으로 돌아오세요.', 'success');
+            setBusy(button, true, '새 탭에서 결제 중');
+            return;
+          }
+
+          setSupportStatus('팝업이 차단되어 현재 탭에서 StepPay 결제 페이지로 이동합니다.');
+          window.setTimeout(() => window.location.assign(checkoutUrl.toString()), 120);
+        } catch (error) {
+          closeCheckoutWindow(checkoutWindow);
+          const message = error instanceof Error && error.message
+            ? error.message
+            : '결제 페이지를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+          setSupportStatus(message, 'error');
+          setBusy(button, false, '₩5,000 후원하고 결제하기');
+          playSound('miss');
+        }
+      }
+
+      function announceSupportReturn() {
+        const params = new URLSearchParams(window.location.search);
+        const state = params.get('support');
+        if (!['success', 'cancel', 'error'].includes(state)) return;
+
+        params.delete('support');
+        params.delete('order');
+        const query = params.toString();
+        window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+
+        const messages = {
+          success: '결제 완료 화면에서 돌아왔습니다. 실제 결제 상태는 StepPay 결제 내역에서 확인하세요.',
+          cancel: '후원 결제를 취소했습니다. 게임은 그대로 이어집니다.',
+          error: 'StepPay에서 결제 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+        };
+        showToast(messages[state], state === 'error' ? 'error' : 'info');
       }
 
       async function getQuestions() {
@@ -1517,7 +1682,7 @@
         button.addEventListener('click', () => {
           initAudio();
           playSound('success');
-          showToast('후원해주셔서 감사합니다. 현재는 데모 버튼입니다.');
+          openSupportModal();
         });
       });
 
@@ -1547,6 +1712,8 @@
       $('rematch-btn').addEventListener('click', requestRematch);
       $('start-share-btn').addEventListener('click', () => shareGame(false));
       $('gameover-share-btn').addEventListener('click', () => shareGame(true));
+      $('support-close-btn').addEventListener('click', closeSupportModal);
+      $('support-form').addEventListener('submit', beginSupportCheckout);
       $('initials-input').addEventListener('input', (event) => {
         event.target.value = normalizeInitials(event.target.value);
       });
@@ -1554,6 +1721,7 @@
       initializeGlobe();
       restoreSavedInitials();
       loadRankings();
+      announceSupportReturn();
       const roomParam = new URLSearchParams(window.location.search).get('room');
       if (roomParam) {
         isMultiplayer = true;
