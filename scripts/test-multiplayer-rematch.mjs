@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const siteUrl = process.env.GEOPINDER_TEST_URL || 'https://geopinder-arcade.vercel.app/';
 const chromeBin = process.env.CHROME_BIN || 'chromium';
+const viewport = process.env.GEOPINDER_TEST_VIEWPORT || '1280,720';
 const debugPort = 9600 + (process.pid % 300);
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-rematch-cdp-'));
 let chrome;
@@ -93,6 +94,13 @@ async function openPage(browserUrl, url) {
   return client;
 }
 
+async function captureScreenshot(client, path) {
+  if (!path) return;
+  await client.send('Page.bringToFront');
+  const screenshot = await client.send('Page.captureScreenshot', { format: 'png' });
+  await writeFile(path, Buffer.from(screenshot.data, 'base64'));
+}
+
 async function gameState(client) {
   return evaluate(client, `(() => ({
     round: document.getElementById('round-display').textContent,
@@ -123,7 +131,7 @@ try {
     '--no-sandbox',
     '--disable-gpu',
     '--hide-scrollbars',
-    '--window-size=1280,720',
+    `--window-size=${viewport}`,
     `--remote-debugging-port=${debugPort}`,
     `--user-data-dir=${profileDir}`,
     'about:blank'
@@ -180,9 +188,11 @@ try {
   if (!beforeVote.every((state) => state.rematchPresent && state.rematchHidden === false)) {
     throw new Error(`Expected visible rematch CTAs after 2P game over: ${JSON.stringify(beforeVote)}`);
   }
+  await captureScreenshot(host, process.env.GEOPINDER_REMATCH_GAMEOVER_SCREENSHOT);
 
   await evaluate(guest, `document.getElementById('rematch-btn').click()`);
   await waitFor('guest rematch waiting state', async () => evaluate(guest, `document.getElementById('rematch-btn').disabled === true`));
+  await captureScreenshot(guest, process.env.GEOPINDER_REMATCH_WAITING_SCREENSHOT);
   await sleep(800);
   const afterSingleVote = await Promise.all([gameState(host), gameState(guest)]);
   if (!afterSingleVote.every((state) => state.gameOverOpen && state.round === '5/5')) {

@@ -45,6 +45,8 @@ expect(playSoundBody.indexOf('osc.start(now)') !== -1 && playSoundBody.indexOf('
 expect(/closeModal\('waiting-modal'\)/.test(startGameMultiBody), '2P 라운드가 시작되면 호스트·게스트의 대기 모달을 닫아야 합니다.');
 expect(/ROUND_SECONDS_BY_DIFFICULTY\s*=\s*Object\.freeze\(\{[\s\S]*easy:\s*null,[\s\S]*normal:\s*20,[\s\S]*hard:\s*10/.test(index), '초급·중급·고급의 제한 시간은 null·20·10초여야 합니다.');
 expect(/roundSeconds === null/.test(startTimerBody) && /renderTimer\(null\)/.test(startTimerBody), '초급은 타이머 interval과 강제 제출 없이 TIME HUD를 숨겨야 합니다.');
+expect((index.match(/class="diff-btn__name"/g) || []).length === 3 && (index.match(/class="diff-btn__meta"/g) || []).length === 3, '난이도 버튼은 이름과 시간 규칙을 분리한 일관된 2줄 구조여야 합니다.');
+expect(/hud-top--timeless/.test(index) && /classList\.toggle\('hud-top--timeless'/.test(index), '초급은 빈 타이머 열 대신 timeless HUD 레이아웃을 사용해야 합니다.');
 expect(!/lat:\s*-90/.test(forceSubmitBody) && /submitGuess\(\{ allowNoSelection: true \}\)/.test(forceSubmitBody), '시간 종료 미선택은 가짜 좌표 없이 no-selection 제출로 처리해야 합니다.');
 expect(/allowNoSelection/.test(submitGuessBody) && /noGuess:\s*!currentPin/.test(submitGuessBody), '미선택 제출은 2P noGuess payload를 전송해야 합니다.');
 expect(/NO PICK/.test(showRoundResultBody) && /선택 안 함/.test(showRoundResultBody), '미선택 결과는 NO PICK과 선택 안 함을 표시해야 합니다.');
@@ -58,7 +60,9 @@ expect(/<urlset\b/i.test(sitemap), 'sitemap.xml 형식이 올바르지 않습니
 expect(/User-agent:\s*\*/i.test(robots) && /Allow:\s*\//i.test(robots), 'robots.txt 크롤링 정책이 없습니다.');
 expect(Array.isArray(vercel.headers) && vercel.headers.length > 0, 'vercel.json 보안 헤더가 없습니다.');
 expect(/connect-src[^;]*wss:\/\/\*\.supabase\.co/i.test(cspHeader), 'Supabase Realtime을 위해 CSP connect-src에 wss://*.supabase.co가 필요합니다.');
-expect(/id="rematch-btn"[^>]*hidden/.test(index), '2P 게임 오버 화면에 기본 숨김 상태의 한판 더하기 버튼이 필요합니다.');
+expect(/id="rematch-btn"/.test(index), '2P 게임 오버 화면에 한판 더하기 버튼이 필요합니다.');
+expect(/id="rematch-panel"[^>]*hidden/.test(index) && /id="rematch-status"[^>]*aria-live="polite"/.test(index), '2P 재대결에는 안내와 라이브 상태를 가진 rematch 패널이 필요합니다.');
+expect(/function setRematchStatus\(message, tone/.test(index), '재대결 대기·상대 준비·시작 상태를 갱신하는 함수가 필요합니다.');
 expect(/let currentMatchId\s*=/.test(index) && /let gamePhase\s*=/.test(index), '재대결은 matchId와 gamePhase 상태를 관리해야 합니다.');
 expect(/event:\s*'rematch_vote'/.test(index) && /event:\s*'rematch_start'/.test(index), '재대결에는 rematch_vote와 rematch_start Realtime 이벤트가 필요합니다.');
 expect(/matchId:\s*currentMatchId/.test(index), '2P gameplay payload는 현재 matchId를 포함해야 합니다.');

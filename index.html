@@ -153,6 +153,9 @@
     .hud-stats { color: var(--gold); text-align: right; }
     .hud-label { color: var(--pink); }
     .hud-time { color: var(--gold); font-size: 1.32em; }
+    .hud-top--timeless { grid-template-columns: minmax(180px, 1fr) auto; }
+    .hud-top--timeless .hud-timer { display: none; }
+    .hud-top--timeless .hud-stats { grid-column: 2; }
 
     #quiz-panel {
       position: fixed;
@@ -362,6 +365,26 @@
     .difficulty-select .btn,
     .button-row .btn { margin: 0; }
 
+    .diff-btn {
+      position: relative;
+      display: flex;
+      min-height: 68px;
+      padding: 9px 6px;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
+      justify-content: center;
+    }
+    .diff-btn__name { font-size: 1.05em; font-weight: 700; line-height: 1; white-space: nowrap; }
+    .diff-btn__meta { font-size: 0.72em; letter-spacing: 0.04em; line-height: 1; white-space: nowrap; }
+    .diff-btn.is-selected::after {
+      position: absolute;
+      top: 5px;
+      right: 6px;
+      content: '✓';
+      font-size: 0.72em;
+      line-height: 1;
+    }
     .diff-btn.is-selected { background: var(--green); color: #000; }
     .diff-btn[data-diff='normal'].is-selected { background: var(--pink); }
     .diff-btn[data-diff='hard'].is-selected { background: var(--gold); }
@@ -394,6 +417,32 @@
       line-height: 1;
       text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
     }
+
+    .rematch-panel {
+      margin-top: 16px;
+      padding: 14px;
+      border: 2px solid var(--cyan);
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 0, 0, 0.96));
+      box-shadow: inset 0 0 16px rgba(0, 255, 255, 0.1), 0 0 12px rgba(0, 255, 255, 0.2);
+      text-align: left;
+    }
+    .rematch-panel[hidden] { display: none; }
+    .rematch-panel__eyebrow {
+      margin: 0 0 7px !important;
+      color: var(--cyan) !important;
+      font-size: 14px !important;
+      letter-spacing: 0.08em;
+    }
+    #rematch-status {
+      min-height: 2.7em;
+      margin: 0 !important;
+      color: var(--white);
+      font-size: clamp(14px, 3.6vw, 17px) !important;
+      line-height: 1.45;
+    }
+    .rematch-panel[data-tone='waiting'] { border-color: var(--gold); }
+    .rematch-panel[data-tone='ready'] { border-color: var(--green); }
+    #rematch-btn { min-height: 48px; margin-top: 12px; }
 
     .ad-slot {
       display: grid;
@@ -496,6 +545,8 @@
       .hud-stats { text-align: right; }
       .hud-timer,
       .hud-stats { font-size: clamp(14px, 4.1vw, 17px); }
+      .hud-top--timeless { grid-template-columns: minmax(0, 1fr); }
+      .hud-top--timeless .hud-stats { grid-column: 1 / -1; text-align: center; }
 
       #quiz-panel {
         top: auto;
@@ -515,6 +566,7 @@
       #quiz-hint { min-height: 2.6em; font-size: clamp(13px, 3.8vw, 16px); }
       #sync-msg { margin-top: 7px; font-size: 13px; }
       .btn { padding: 10px 9px; border-width: 2px; box-shadow: 3px 3px 0 currentColor; font-size: clamp(14px, 3.8vw, 16px); }
+      .diff-btn { min-height: 62px; padding: 8px 4px; gap: 4px; }
       .btn:active:not(:disabled) { transform: translate(3px, 3px); }
       .modal-card { border-width: 3px; box-shadow: 6px 6px 0 var(--pink), 0 0 18px rgba(255, 51, 102, 0.42); }
       .modal-card--gold { box-shadow: 6px 6px 0 var(--gold), 0 0 18px rgba(255, 215, 0, 0.38); }
@@ -570,9 +622,9 @@
         </div>
         <div class="difficulty-label">난이도 선택 (Difficulty)</div>
         <div id="difficulty-select" class="difficulty-select" aria-label="난이도 선택">
-          <button class="btn diff-btn is-selected" type="button" data-diff="easy" aria-pressed="true">초급 · 제한 없음</button>
-          <button class="btn diff-btn btn-red" type="button" data-diff="normal" aria-pressed="false">중급 · 20초</button>
-          <button class="btn diff-btn btn-yellow" type="button" data-diff="hard" aria-pressed="false">고급 · 10초</button>
+          <button class="btn diff-btn is-selected" type="button" data-diff="easy" aria-pressed="true" aria-label="초급, 시간 제한 없음"><span class="diff-btn__name">초급</span><span class="diff-btn__meta">제한 없음</span></button>
+          <button class="btn diff-btn btn-red" type="button" data-diff="normal" aria-pressed="false" aria-label="중급, 제한 시간 20초"><span class="diff-btn__name">중급</span><span class="diff-btn__meta">20 SEC</span></button>
+          <button class="btn diff-btn btn-yellow" type="button" data-diff="hard" aria-pressed="false" aria-label="고급, 제한 시간 10초"><span class="diff-btn__name">고급</span><span class="diff-btn__meta">10 SEC</span></button>
         </div>
         <div class="button-row">
           <button id="start-btn" class="btn btn-red" type="button">1P 혼자하기</button>
@@ -628,8 +680,10 @@
           <button id="save-rank-btn" class="btn btn-red" type="button">랭킹 등록</button>
           <button id="gameover-share-btn" class="btn btn-blue" type="button">자랑하기</button>
         </div>
-        <div class="button-row">
-          <button id="rematch-btn" class="btn btn-yellow" type="button" hidden>한판 더하기</button>
+        <div id="rematch-panel" class="rematch-panel" hidden data-tone="idle">
+          <p class="rematch-panel__eyebrow">2P REMATCH</p>
+          <p id="rematch-status" aria-live="polite">양쪽이 한판 더하기를 선택하면 새 대결이 시작됩니다.</p>
+          <button id="rematch-btn" class="btn btn-yellow" type="button">한판 더하기</button>
         </div>
         <div class="button-row button-row--stack">
           <button class="btn donate-btn btn-yellow" type="button">재미있었다면 커피 사주기</button>
@@ -829,6 +883,7 @@
       function renderTimer(seconds) {
         const timer = $('hud-timer');
         const isTimed = Number.isFinite(seconds);
+        document.querySelector('.hud-top').classList.toggle('hud-top--timeless', !isTimed);
         timer.style.visibility = isTimed ? 'visible' : 'hidden';
         timer.setAttribute('aria-hidden', String(!isTimed));
         if (!isTimed) return;
@@ -867,20 +922,27 @@
         updateHUD();
       }
 
+      function setRematchStatus(message, tone = 'idle') {
+        $('rematch-panel').dataset.tone = tone;
+        $('rematch-status').textContent = message;
+      }
+
       function resetRematchState() {
         rematchVotes = { host: false, guest: false };
+        $('rematch-panel').hidden = true;
         const rematchButton = $('rematch-btn');
-        rematchButton.hidden = true;
         rematchButton.disabled = false;
         rematchButton.textContent = '한판 더하기';
+        setRematchStatus('양쪽이 한판 더하기를 선택하면 새 대결이 시작됩니다.');
       }
 
       function prepareRematchUI() {
+        $('rematch-panel').hidden = !isMultiplayer;
         const rematchButton = $('rematch-btn');
-        rematchButton.hidden = !isMultiplayer;
         rematchButton.disabled = false;
         rematchButton.textContent = '한판 더하기';
         rematchVotes = { host: false, guest: false };
+        setRematchStatus('양쪽이 한판 더하기를 선택하면 새 대결이 시작됩니다. 랭킹 등록은 선택 사항입니다.');
       }
 
       function startTimer() {
@@ -1125,6 +1187,7 @@
       }
 
       function showAdAndGameOver() {
+        $('quiz-panel').classList.add('hidden');
         showModal('ad-modal');
         let adTime = 5;
         $('ad-timer-span').textContent = adTime;
@@ -1162,6 +1225,7 @@
 
       function maybeStartRematch() {
         if (myRole !== 'host' || !rematchVotes.host || !rematchVotes.guest) return;
+        setRematchStatus('양쪽 준비 완료 · 새 대결을 시작합니다.', 'ready');
         const nextMatchId = currentMatchId + 1;
         const payload = {
           previousMatchId: currentMatchId,
@@ -1179,6 +1243,7 @@
         gamePhase = 'rematch_wait';
         $('rematch-btn').disabled = true;
         $('rematch-btn').textContent = '상대방 대기 중...';
+        setRematchStatus('내 준비 완료 · 상대방의 한판 더하기를 기다리는 중입니다.', 'waiting');
         roomChannel.send({ type: 'broadcast', event: 'rematch_vote', payload: { matchId: currentMatchId, role: myRole } });
         showToast('재대결 의사를 보냈습니다. 상대방을 기다립니다.');
         maybeStartRematch();
@@ -1225,6 +1290,8 @@
           .on('broadcast', { event: 'rematch_vote' }, ({ payload }) => {
             if (!payload || payload.matchId !== currentMatchId || !['host', 'guest'].includes(payload.role) || (gamePhase !== 'post_game' && gamePhase !== 'rematch_wait')) return;
             rematchVotes[payload.role] = true;
+            if (rematchVotes[myRole]) setRematchStatus('상대 준비 완료 · 새 대결을 시작합니다.', 'ready');
+            else setRematchStatus('상대방 준비 완료 · 한판 더하기를 누르면 즉시 시작합니다.', 'ready');
             showToast('상대방이 한판 더하기를 선택했습니다.');
             maybeStartRematch();
           })
@@ -1380,6 +1447,7 @@
         showToast('랭킹 등록이 완료되었습니다!');
         if (isMultiplayer) {
           setBusy(button, true, '랭킹 등록 완료');
+          setRematchStatus('랭킹 등록 완료 · 재대결은 아래에서 바로 시작할 수 있습니다.');
           return;
         }
         window.setTimeout(() => window.location.assign(window.location.pathname), 900);

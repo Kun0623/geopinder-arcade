@@ -144,16 +144,17 @@ try {
     return {
       value: document.getElementById('time-display').textContent,
       visibility: getComputedStyle(timer).visibility,
-      ariaHidden: timer.getAttribute('aria-hidden')
+      ariaHidden: timer.getAttribute('aria-hidden'),
+      timelessHud: document.querySelector('.hud-top').classList.contains('hud-top--timeless')
     };
   })()`);
   if (expectedTimerSeconds === null) {
-    if (timerState.visibility !== 'hidden' || timerState.ariaHidden !== 'true') {
+    if (timerState.visibility !== 'hidden' || timerState.ariaHidden !== 'true' || !timerState.timelessHud) {
       throw new Error(`Easy mode must hide the timer, received: ${JSON.stringify(timerState)}`);
     }
   } else {
     const initialTimerValue = Number(timerState.value);
-    if (timerState.visibility !== 'visible' || timerState.ariaHidden !== 'false' || initialTimerValue > expectedTimerSeconds || initialTimerValue < expectedTimerSeconds - 1) {
+    if (timerState.visibility !== 'visible' || timerState.ariaHidden !== 'false' || timerState.timelessHud || initialTimerValue > expectedTimerSeconds || initialTimerValue < expectedTimerSeconds - 1) {
       throw new Error(`${testDifficulty} timer must start near ${expectedTimerSeconds}, received: ${JSON.stringify(timerState)}`);
     }
     await waitFor(`${testDifficulty} timer decrement`, async () => evaluate(client, `Number(document.getElementById('time-display').textContent) < ${expectedTimerSeconds}`));
