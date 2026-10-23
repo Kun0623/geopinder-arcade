@@ -9,6 +9,8 @@ const sitemap = read('sitemap.xml');
 const robots = read('robots.txt');
 const vercel = JSON.parse(read('vercel.json'));
 const failures = [];
+const beginSoloBody = index.match(/async function beginSolo\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*async function beginMultiplayer\(\)/)?.[1] || '';
+const playSoundBody = index.match(/function playSound\(type\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function requireSupabase\(\)/)?.[1] || '';
 
 function expect(condition, message) {
   if (!condition) failures.push(message);
@@ -29,6 +31,10 @@ expect(/<meta name="description"/i.test(index), 'SEO description이 없습니다
 expect(/<meta property="og:title"/i.test(index) && /<meta name="twitter:card"/i.test(index), 'OG/Twitter 메타데이터가 없습니다.');
 expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없습니다.');
 expect(/Promise\.allSettled\(\[/.test(index), '하나의 지도 경계 요청 실패가 전체 지도를 막지 않도록 allSettled 처리가 필요합니다.');
+expect(/const FALLBACK_QUESTIONS\s*=\s*\[/.test(index), 'Supabase 미구성 시 1P 테스트에 사용할 로컬 문제 풀이 없습니다.');
+expect(/const data = await getQuestions\(\) \|\| FALLBACK_QUESTIONS;/.test(beginSoloBody), '1P 시작은 Supabase 데이터 실패 시 로컬 문제로 폴백해야 합니다.');
+expect(!/requireSupabase\(\)/.test(beginSoloBody), '1P 시작이 Supabase 미구성만으로 차단되면 안 됩니다.');
+expect(playSoundBody.indexOf('osc.start(now)') !== -1 && playSoundBody.indexOf('osc.start(now)') < playSoundBody.indexOf('osc.stop('), 'Web Audio oscillator는 stop() 전에 start()되어야 합니다.');
 expect(/YOUR_SUPABASE_ANON_KEY/.test(configExample), 'config.example.js에 Anon Key 안내가 없습니다.');
 expect(!/service_role/i.test(index), 'index.html에 금지된 Supabase service role 문자열이 있습니다.');
 expect(!/비밀코드/.test(index), 'index.html에 이전 비밀 문자열이 남아 있습니다.');

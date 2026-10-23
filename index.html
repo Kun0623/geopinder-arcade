@@ -633,6 +633,23 @@
       const $ = (id) => document.getElementById(id);
       const modals = ['start-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
 
+      function createDemoArtwork(title, accent) {
+        const safeTitle = String(title).replace(/[&<>"']/g, '');
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560"><rect width="960" height="560" fill="#081316"/><path d="M0 420L180 290L320 410L500 200L690 390L820 270L960 400V560H0Z" fill="#12343a"/><circle cx="760" cy="120" r="62" fill="${accent}" opacity=".82"/><path d="M0 54H960M0 108H960M0 162H960M0 216H960M0 270H960M0 324H960M0 378H960M0 432H960M0 486H960" stroke="#0d252a" stroke-width="3"/><text x="480" y="266" text-anchor="middle" fill="#f7fff9" font-family="monospace" font-size="54" font-weight="700">${safeTitle}</text><text x="480" y="320" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="24">ARCADE DEMO LOCATION</text><rect x="70" y="414" width="820" height="6" fill="${accent}" opacity=".85"/></svg>`;
+        return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+      }
+
+      // Supabase를 아직 설정하지 않은 배포에서도 1P 플래그 배치와 점수 흐름을 바로 테스트할 수 있는 공개 데모 문제입니다.
+      const FALLBACK_QUESTIONS = [
+        { hint: '빛의 도시 파리에 있는 철제 탑입니다.', lat: 48.8584, lng: 2.2945, img: createDemoArtwork('EIFFEL TOWER', '#ff3366') },
+        { hint: '뉴욕 항구에서 횃불을 든 자유의 상징을 찾아보세요.', lat: 40.6892, lng: -74.0445, img: createDemoArtwork('STATUE OF LIBERTY', '#00ffff') },
+        { hint: '인도 아그라에 있는 하얀 대리석 묘소입니다.', lat: 27.1751, lng: 78.0421, img: createDemoArtwork('TAJ MAHAL', '#ffd700') },
+        { hint: '호주 시드니 항구의 조개 껍질 모양 공연장입니다.', lat: -33.8568, lng: 151.2153, img: createDemoArtwork('SYDNEY OPERA HOUSE', '#33ff66') },
+        { hint: '이집트 기자 고원에 있는 거대한 고대 피라미드입니다.', lat: 29.9792, lng: 31.1342, img: createDemoArtwork('GREAT PYRAMID', '#ff3366') },
+        { hint: '브라질 리우데자네이루 산 정상에서 두 팔을 벌린 예수상입니다.', lat: -22.9519, lng: -43.2105, img: createDemoArtwork('CHRIST THE REDEEMER', '#00ffff') },
+        { hint: '중국 북부 산지를 따라 길게 이어진 성벽입니다.', lat: 40.4319, lng: 116.5704, img: createDemoArtwork('GREAT WALL', '#ffd700') }
+      ];
+
       let allQuestions = [];
       let currentQuestions = [];
       let currentRound = 1;
@@ -701,6 +718,7 @@
         gain.connect(audioCtx.destination);
         const now = audioCtx.currentTime;
         osc.type = type === 'miss' ? 'sawtooth' : 'square';
+        osc.start(now);
         if (type === 'pin') {
           osc.frequency.setValueAtTime(600, now);
           osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
@@ -721,7 +739,6 @@
           gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
           osc.stop(now + 0.4);
         }
-        osc.start(now);
       }
 
       function requireSupabase() {
@@ -736,7 +753,7 @@
       }
 
       async function getQuestions() {
-        if (!requireSupabase()) return null;
+        if (!supabaseClient) return null;
         const { data, error } = await supabaseClient.from('geopinder_places').select('*');
         if (error) {
           showToast('문제를 불러오지 못했습니다. Supabase 설정을 확인하세요.', 'error');
@@ -1083,11 +1100,11 @@
 
       async function beginSolo() {
         initAudio();
-        if (!requireSupabase()) return;
         const button = $('start-btn');
         setBusy(button, true, 'LOADING...');
-        const data = await getQuestions();
+        const data = await getQuestions() || FALLBACK_QUESTIONS;
         if (data) {
+          const isDemoMode = data === FALLBACK_QUESTIONS;
           allQuestions = data;
           currentQuestions = shuffleArray([...allQuestions]).slice(0, TOTAL_ROUNDS);
           isMultiplayer = false;
@@ -1098,6 +1115,7 @@
           closeModal('start-modal');
           loadQuestion(0);
           playSound('success');
+          if (isDemoMode) showToast('DEMO MODE: Supabase 없이 1P 플래그 배치를 테스트합니다.');
         }
         setBusy(button, false, '1P 혼자하기');
       }
