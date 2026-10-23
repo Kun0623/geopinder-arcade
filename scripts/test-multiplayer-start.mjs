@@ -6,6 +6,8 @@ import { join } from 'node:path';
 const siteUrl = process.env.GEOPINDER_TEST_URL || 'https://geopinder-arcade.vercel.app/';
 const chromeBin = process.env.CHROME_BIN || 'chromium';
 const debugPort = 9400 + (process.pid % 400);
+const guestJoinDelayMs = Number(process.env.GEOPINDER_GUEST_JOIN_DELAY_MS || 500);
+const enableRealtimeTrace = process.env.GEOPINDER_REALTIME_TRACE === '1';
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-mp-cdp-'));
 let chrome;
 const sockets = [];
@@ -76,12 +78,71 @@ async function evaluate(client, expression) {
 }
 
 async function openPage(browserUrl, url) {
-  const response = await fetch(`${browserUrl}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' });
+  const response = await fetch(`${browserUrl}/json/new?about:blank`, { method: 'PUT' });
   if (!response.ok) throw new Error(`Could not create browser target: ${response.status}`);
   const target = await response.json();
   const client = await createCdpClient(target.webSocketDebuggerUrl);
   await client.send('Page.enable');
   await client.send('Runtime.enable');
+  if (enableRealtimeTrace) {
+    await client.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `(() => {
+        const trace = (event, detail = {}) => {
+          const list = window.__geopinderBrowserRealtimeTrace = window.__geopinderBrowserRealtimeTrace || [];
+          list.push({ event, detail, at: Date.now() });
+        };
+        document.addEventListener('securitypolicyviolation', (event) => {
+          trace('csp_violation', {
+            directive: event.effectiveDirective,
+            blockedURI: String(event.blockedURI || '').split('?')[0]
+          });
+        });
+        let supabaseValue;
+        Object.defineProperty(window, 'supabase', {
+          configurable: true,
+          get: () => supabaseValue,
+          set: (next) => {
+            supabaseValue = next;
+            if (!next?.createClient || next.__geopinderTraceWrapped) return;
+            try {
+              const createClient = next.createClient.bind(next);
+              next.createClient = (...args) => {
+                const client = createClient(...args);
+                const channel = client.channel.bind(client);
+                client.channel = (...channelArgs) => {
+                  const realtimeChannel = channel(...channelArgs);
+                  const topic = String(channelArgs[0] || '');
+                  const on = realtimeChannel.on.bind(realtimeChannel);
+                  const subscribe = realtimeChannel.subscribe.bind(realtimeChannel);
+                  const send = realtimeChannel.send.bind(realtimeChannel);
+                  realtimeChannel.on = (type, filter, callback) => on(type, filter, (...callbackArgs) => {
+                    trace('received', { type, event: filter?.event || null, topic });
+                    return callback(...callbackArgs);
+                  });
+                  realtimeChannel.subscribe = (callback) => subscribe((status, error) => {
+                    trace('subscribe_status', { status, topic, hasError: Boolean(error) });
+                    return callback?.(status, error);
+                  });
+                  realtimeChannel.send = (message) => {
+                    trace('send', { event: message?.event || null, topic });
+                    const result = send(message);
+                    Promise.resolve(result).then((status) => trace('send_result', { event: message?.event || null, status: String(status), topic })).catch((error) => trace('send_error', { event: message?.event || null, message: String(error), topic }));
+                    return result;
+                  };
+                  return realtimeChannel;
+                };
+                return client;
+              };
+              next.__geopinderTraceWrapped = true;
+            } catch (error) {
+              trace('wrap_error', { message: String(error) });
+            }
+          }
+        });
+      })()`
+    });
+  }
+  await client.send('Page.navigate', { url });
   return client;
 }
 
@@ -106,7 +167,7 @@ async function multiplayerState(client) {
     round: document.getElementById('round-display').textContent,
     errors: window.__geopinderMultiplayerErrors || [],
     toasts: [...document.querySelectorAll('.toast')].map((node) => node.textContent),
-    realtimeTrace: window.__geopinderRealtimeTrace || []
+    realtimeTrace: [...(window.__geopinderRealtimeTrace || []), ...(window.__geopinderBrowserRealtimeTrace || [])]
   }))()`);
 }
 
@@ -138,7 +199,7 @@ try {
     return value.includes('?room=') ? value : null;
   })()`));
   await waitFor('host waiting modal', async () => evaluate(host, `document.getElementById('waiting-modal').classList.contains('is-open')`));
-  await sleep(500);
+  await sleep(guestJoinDelayMs);
 
   const guest = await openPage(browserUrl, inviteUrl);
   await waitFor('guest waiting modal', async () => evaluate(guest, `Boolean(document.getElementById('waiting-modal'))`));

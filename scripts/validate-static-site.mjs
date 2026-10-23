@@ -8,6 +8,7 @@ const configExample = read('config.example.js');
 const sitemap = read('sitemap.xml');
 const robots = read('robots.txt');
 const vercel = JSON.parse(read('vercel.json'));
+const cspHeader = vercel.headers?.flatMap((rule) => rule.headers || []).find((header) => header.key?.toLowerCase() === 'content-security-policy')?.value || '';
 const failures = [];
 const beginSoloBody = index.match(/async function beginSolo\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*async function beginMultiplayer\(\)/)?.[1] || '';
 const playSoundBody = index.match(/function playSound\(type\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function requireSupabase\(\)/)?.[1] || '';
@@ -46,6 +47,7 @@ expect(!/비밀코드/.test(index), 'index.html에 이전 비밀 문자열이 �
 expect(/<urlset\b/i.test(sitemap), 'sitemap.xml 형식이 올바르지 않습니다.');
 expect(/User-agent:\s*\*/i.test(robots) && /Allow:\s*\//i.test(robots), 'robots.txt 크롤링 정책이 없습니다.');
 expect(Array.isArray(vercel.headers) && vercel.headers.length > 0, 'vercel.json 보안 헤더가 없습니다.');
+expect(/connect-src[^;]*wss:\/\/\*\.supabase\.co/i.test(cspHeader), 'Supabase Realtime을 위해 CSP connect-src에 wss://*.supabase.co가 필요합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');
