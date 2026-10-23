@@ -38,6 +38,8 @@ expect(/window\.GEOPINDER_CONFIG/.test(index) && /supabaseAnonKey/.test(index), 
 expect(/<meta name="description"/i.test(index), 'SEO description이 없습니다.');
 expect(/<meta property="og:title"/i.test(index) && /<meta name="twitter:card"/i.test(index), 'OG/Twitter 메타데이터가 없습니다.');
 expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없습니다.');
+expect(/<meta name="google-adsense-account" content="ca-pub-\d+">/i.test(index), 'Google AdSense Publisher ID 메타 태그가 없습니다.');
+expect(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+" crossorigin="anonymous"><\/script>/i.test(index), 'Google Auto Ads 로더 스크립트가 없습니다.');
 expect(/Promise\.allSettled\(\[/.test(index), '하나의 지도 경계 요청 실패가 전체 지도를 막지 않도록 allSettled 처리가 필요합니다.');
 expect(/const FALLBACK_QUESTIONS\s*=\s*\[/.test(index), 'Supabase 미구성 시 1P 테스트에 사용할 로컬 문제 풀이 없습니다.');
 expect(/const data = await getQuestions\(\) \|\| FALLBACK_QUESTIONS;/.test(beginSoloBody), '1P 시작은 Supabase 데이터 실패 시 로컬 문제로 폴백해야 합니다.');
@@ -61,6 +63,8 @@ expect(/<urlset\b/i.test(sitemap), 'sitemap.xml 형식이 올바르지 않습니
 expect(/User-agent:\s*\*/i.test(robots) && /Allow:\s*\//i.test(robots), 'robots.txt 크롤링 정책이 없습니다.');
 expect(Array.isArray(vercel.headers) && vercel.headers.length > 0, 'vercel.json 보안 헤더가 없습니다.');
 expect(/connect-src[^;]*wss:\/\/\*\.supabase\.co/i.test(cspHeader), 'Supabase Realtime을 위해 CSP connect-src에 wss://*.supabase.co가 필요합니다.');
+expect(/script-src[^;]*https:\/\/pagead2\.googlesyndication\.com/i.test(cspHeader), 'Google Auto Ads 로더를 위해 CSP script-src에 pagead2.googlesyndication.com이 필요합니다.');
+expect(/frame-src[^;]*https:\/\/googleads\.g\.doubleclick\.net/i.test(cspHeader), 'Google Auto Ads iframe을 위해 CSP frame-src에 googleads.g.doubleclick.net이 필요합니다.');
 expect(/id="rematch-btn"/.test(index), '2P 게임 오버 화면에 한판 더하기 버튼이 필요합니다.');
 expect(/id="rematch-panel"[^>]*hidden/.test(index) && /id="rematch-status"[^>]*aria-live="polite"/.test(index), '2P 재대결에는 안내와 라이브 상태를 가진 rematch 패널이 필요합니다.');
 expect(/function setRematchStatus\(message, tone/.test(index), '재대결 대기·상대 준비·시작 상태를 갱신하는 함수가 필요합니다.');
