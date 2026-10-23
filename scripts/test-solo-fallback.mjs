@@ -156,6 +156,7 @@ try {
 
   try {
     await waitFor('globe flag placement', async () => evaluate(client, `document.getElementById('submit-btn').disabled === false`));
+    await waitFor('SVG globe marker render', async () => evaluate(client, `document.querySelector('.globe-marker__icon')?.tagName?.toLowerCase() === 'svg'`));
   } catch (error) {
     const screenshot = await client.send('Page.captureScreenshot', { format: 'png' });
     const screenshotPath = '/tmp/geopinder-solo-fallback-debug.png';
@@ -174,9 +175,23 @@ try {
     }))()`);
     throw new Error(`${error.message} | screenshot=${screenshotPath} | diagnostics=${JSON.stringify(diagnostics)}`);
   }
-  const result = await evaluate(client, `({ hint: document.getElementById('quiz-hint').textContent, submitEnabled: !document.getElementById('submit-btn').disabled })`);
+  const result = await evaluate(client, `({
+    hint: document.getElementById('quiz-hint').textContent,
+    submitEnabled: !document.getElementById('submit-btn').disabled,
+    markerTag: document.querySelector('.globe-marker__icon')?.tagName?.toLowerCase() || null
+  })`);
 
-  if (!result.submitEnabled) throw new Error(`Unexpected 1P demo state: ${JSON.stringify(result)}`);
+  if (!result.submitEnabled || result.markerTag !== 'svg') throw new Error(`Unexpected 1P demo state: ${JSON.stringify(result)}`);
+  await evaluate(client, `document.getElementById('submit-btn').click()`);
+  await waitFor('SVG target marker render', async () => evaluate(client, `document.querySelectorAll('.globe-marker__icon').length >= 2`));
+  const markerViewBoxes = await evaluate(client, `[...document.querySelectorAll('.globe-marker__icon')].map((marker) => marker.getAttribute('viewBox'))`);
+  if (!markerViewBoxes.includes('0 0 48 56') || !markerViewBoxes.includes('0 0 56 56')) {
+    throw new Error(`Expected SVG pin and target markers, received: ${JSON.stringify(markerViewBoxes)}`);
+  }
+  if (process.env.GEOPINDER_TEST_SCREENSHOT) {
+    const screenshot = await client.send('Page.captureScreenshot', { format: 'png' });
+    await writeFile(process.env.GEOPINDER_TEST_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
+  }
   console.log(`Solo fallback E2E passed: ${result.hint}`);
   void version;
 } finally {

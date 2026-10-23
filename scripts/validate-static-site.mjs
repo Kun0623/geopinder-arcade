@@ -35,6 +35,9 @@ expect(/const FALLBACK_QUESTIONS\s*=\s*\[/.test(index), 'Supabase 미구성 시 
 expect(/const data = await getQuestions\(\) \|\| FALLBACK_QUESTIONS;/.test(beginSoloBody), '1P 시작은 Supabase 데이터 실패 시 로컬 문제로 폴백해야 합니다.');
 expect(!/requireSupabase\(\)/.test(beginSoloBody), '1P 시작이 Supabase 미구성만으로 차단되면 안 됩니다.');
 expect(playSoundBody.indexOf('osc.start(now)') !== -1 && playSoundBody.indexOf('osc.start(now)') < playSoundBody.indexOf('osc.stop('), 'Web Audio oscillator는 stop() 전에 start()되어야 합니다.');
+expect(/class="globe-marker__icon"/.test(index) && /<svg[^>]*viewBox="0 0 48 56"/.test(index), '추측 위치에는 텍스트가 아닌 SVG 핀 마커가 필요합니다.');
+expect(/<svg[^>]*viewBox="0 0 56 56"/.test(index), '정답 위치에는 텍스트가 아닌 SVG 타겟 마커가 필요합니다.');
+expect(!/const icon = d\.type === 'guess' \? 'PIN' : 'TARGET';/.test(index), 'PIN/TARGET 문자열 마커가 남아 있습니다.');
 expect(/YOUR_SUPABASE_ANON_KEY/.test(configExample), 'config.example.js에 Anon Key 안내가 없습니다.');
 expect(!/service_role/i.test(index), 'index.html에 금지된 Supabase service role 문자열이 있습니다.');
 expect(!/비밀코드/.test(index), 'index.html에 이전 비밀 문자열이 남아 있습니다.');
