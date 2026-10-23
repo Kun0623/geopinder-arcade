@@ -5,6 +5,6 @@
  * service role 키, 데이터베이스 비밀번호, 개인 토큰은 절대 브라우저 파일에 넣지 마세요.
  */
 window.GEOPINDER_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://nkxpjjaqytbihqjofwhc.supabase.co',
+  supabaseAnonKey: 'sb_publishable_-ipoeqw8_LszSLSsHGX2qA_j3GeCM4U'
 };
