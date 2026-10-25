@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Production deployment 후 실제 Vercel URL로 sitemap.xml의 loc을 확정합니다.
-Sitemap: /sitemap.xml
+Sitemap: https://geopinder-arcade.vercel.app/sitemap.xml

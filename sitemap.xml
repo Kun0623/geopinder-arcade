@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Production deployment 후 실제 Vercel HTTPS URL을 loc 요소에 추가합니다. -->
+  <url>
+    <loc>https://geopinder-arcade.vercel.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
 </urlset>
