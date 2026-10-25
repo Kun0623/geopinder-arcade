@@ -90,6 +90,7 @@ expect(/function restoreSavedInitials\(\)/.test(index) && /function rememberInit
 expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInitials\(\)/.test(index), '성공한 랭킹 등록 뒤 저장하고 페이지 초기화 시 이니셜을 복원해야 합니다.');
 expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
 expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
+expect(/function requestArcadeFullscreen\(\)/.test(index) && /requestFullscreen\(\{ navigationUI: 'hide' \}\)/.test(index) && /requestArcadeFullscreen\(\);/.test(index), '게임 시작 시 사용자 제스처 기반 전체화면 요청과 안전한 폴백이 필요합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');
