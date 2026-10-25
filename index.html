@@ -912,6 +912,7 @@
       let timerInterval = null;
       let resultRevealTimer = null;
       let adInterval = null;
+      let lobbyPollInterval = null;
       let timeLeft = null;
       let audioCtx = null;
       let myGlobe = null;
@@ -1602,6 +1603,8 @@
       function resetMultiplayerLobbyState(message = '') {
         roomChannel?.unsubscribe();
         roomChannel = null;
+        clearInterval(lobbyPollInterval);
+        lobbyPollInterval = null;
         stopTimer();
         clearInterval(adInterval);
         isMultiplayer = false;
@@ -1629,11 +1632,15 @@
         const button = $('leave-room-btn');
         setBusy(button, true, '나가는 중...');
         try {
+          const deleteRoom = myRole === 'host' && roomCode
+            ? supabaseClient?.from('geopinder_rooms').delete().eq('room_id', roomCode)
+            : null;
           const cancellation = { type: 'broadcast', event: 'room_cancelled', payload: { role: myRole } };
           for (let attempt = 0; attempt < 4; attempt += 1) {
             await channel?.send(cancellation);
             if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 180));
           }
+          await deleteRoom;
         } finally {
           resetMultiplayerLobbyState('대결방에서 나왔습니다.');
           setBusy(button, false, '방 나가기');
@@ -1702,10 +1709,21 @@
           });
       }
 
+      function startLobbyRoomPoll() {
+        clearInterval(lobbyPollInterval);
+        lobbyPollInterval = window.setInterval(async () => {
+          if (!supabaseClient || myRole !== 'guest' || gamePhase !== 'lobby' || !roomCode) return;
+          const { data, error } = await supabaseClient.from('geopinder_rooms').select('room_id').eq('room_id', roomCode).maybeSingle();
+          if (!error && !data) resetMultiplayerLobbyState('호스트가 대결방을 닫았습니다.');
+        }, 1200);
+      }
+
       function startGameMulti({ questions = null, matchId = currentMatchId } = {}) {
         if (Array.isArray(questions) && questions.length >= TOTAL_ROUNDS) currentQuestions = questions;
         if (Number.isInteger(matchId) && matchId > 0) currentMatchId = matchId;
         gamePhase = 'playing';
+        clearInterval(lobbyPollInterval);
+        lobbyPollInterval = null;
         closeModal('waiting-modal');
         closeModal('result-modal');
         closeModal('ad-modal');
@@ -1796,6 +1814,7 @@
         currentQuestions = data.questions;
         $('wait-msg').textContent = '호스트가 게임을 시작하기를 기다리는 중입니다.';
         setupRealtimeChannel();
+        startLobbyRoomPoll();
       }
 
       async function loadRankings() {

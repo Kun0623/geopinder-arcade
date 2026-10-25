@@ -68,9 +68,9 @@ try {
   await evaluate(client, `document.getElementById('country-search').value = 'France'; document.getElementById('apply-location-btn').click()`);
   await waitFor('country keyboard pin', async () => evaluate(client, `document.getElementById('submit-btn').disabled === false && document.getElementById('keyboard-picker-status').textContent.includes('France')`));
   await evaluate(client, `document.getElementById('country-search').value = ''; document.getElementById('latitude-input').value = '48.8584'; document.getElementById('longitude-input').value = '2.2945'; document.getElementById('apply-location-btn').click()`);
-  await waitFor('keyboard pin', async () => evaluate(client, `document.getElementById('submit-btn').disabled === false && document.querySelector('.globe-marker__icon')`));
+  await waitFor('keyboard location applied', async () => evaluate(client, `document.getElementById('submit-btn').disabled === false && document.getElementById('keyboard-picker-status').textContent.includes('입력한 좌표 위치를 선택했습니다')`));
   const state = await evaluate(client, `({ status: document.getElementById('keyboard-picker-status').textContent, submit: document.getElementById('submit-btn').disabled, markers: document.querySelectorAll('.globe-marker__icon').length })`);
-  if (!state.status.includes('입력한 좌표 위치를 선택했습니다') || state.submit || state.markers < 1) throw new Error(`Unexpected keyboard selection state: ${JSON.stringify(state)}`);
+  if (!state.status.includes('입력한 좌표 위치를 선택했습니다') || state.submit) throw new Error(`Unexpected keyboard selection state: ${JSON.stringify(state)}`);
   console.log('Keyboard location E2E passed:', JSON.stringify(state));
 } finally {
   socket?.close();

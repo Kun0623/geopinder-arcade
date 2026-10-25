@@ -97,6 +97,7 @@ expect(/function populateCountryOptions\(features\)/.test(index) && /country-opt
 expect(/위도는 -90~90, 경도는 -180~180/.test(index), '위경도 범위 오류를 사용자에게 안내해야 합니다.');
 expect(/id="leave-room-btn"/.test(index) && /function leaveMultiplayerLobby\(\)/.test(index), '2P 대기방에는 방 나가기 동작이 필요합니다.');
 expect(/event: 'room_cancelled'/.test(index) && /function resetMultiplayerLobbyState\(/.test(index), '2P 방 나가기는 상대 통지와 로비 상태 초기화를 모두 처리해야 합니다.');
+expect(/function startLobbyRoomPoll\(\)/.test(index) && /maybeSingle\(\)/.test(index), '게스트는 대기 중 방 삭제를 폴링해 늦은 방 나가기도 감지해야 합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');
