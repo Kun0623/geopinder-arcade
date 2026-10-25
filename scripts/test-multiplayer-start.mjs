@@ -167,6 +167,16 @@ async function installErrorCollector(client) {
   })()`);
 }
 
+async function installFullscreenProbe(client) {
+  await evaluate(client, `(() => {
+    window.__geopinderFullscreenRequests = 0;
+    document.documentElement.requestFullscreen = () => {
+      window.__geopinderFullscreenRequests += 1;
+      return Promise.resolve();
+    };
+  })()`);
+}
+
 async function multiplayerState(client) {
   return evaluate(client, `(() => ({
     questionPanelVisible: !document.getElementById('quiz-panel').classList.contains('hidden'),
@@ -174,6 +184,8 @@ async function multiplayerState(client) {
     startModalOpen: document.getElementById('start-modal').classList.contains('is-open'),
     waitMessage: document.getElementById('wait-msg').textContent,
     round: document.getElementById('round-display').textContent,
+    fullscreenRequests: window.__geopinderFullscreenRequests || 0,
+    cleanup: window.__geopinderRealtimeCleanupState || null,
     errors: window.__geopinderMultiplayerErrors || [],
     toasts: [...document.querySelectorAll('.toast')].map((node) => node.textContent),
     realtimeTrace: [...(window.__geopinderRealtimeTrace || []), ...(window.__geopinderBrowserRealtimeTrace || [])]
@@ -201,6 +213,7 @@ try {
   const host = await openPage(browserUrl, siteUrl);
   await waitFor('host 2P button', async () => evaluate(host, `Boolean(document.getElementById('multi-btn'))`));
   await installErrorCollector(host);
+  await installFullscreenProbe(host);
   if (expectHostNoSelection) await evaluate(host, `document.querySelector('.diff-btn[data-diff="hard"]').click()`);
   await evaluate(host, `document.getElementById('multi-btn').click()`);
 
@@ -209,18 +222,31 @@ try {
     return value.includes('?room=') ? value : null;
   })()`));
   await waitFor('host waiting modal', async () => evaluate(host, `document.getElementById('waiting-modal').classList.contains('is-open')`));
+  const hostBeforeGuest = await multiplayerState(host);
+  if (hostBeforeGuest.fullscreenRequests !== 0) throw new Error(`Fullscreen was requested before the guest joined: ${JSON.stringify(hostBeforeGuest)}`);
   await sleep(guestJoinDelayMs);
 
   const guest = await openPage(browserUrl, inviteUrl);
   await waitFor('guest waiting modal', async () => evaluate(guest, `Boolean(document.getElementById('waiting-modal'))`));
   await installErrorCollector(guest);
+  await installFullscreenProbe(guest);
 
   if (expectLobbyLeave) {
     await evaluate(host, `document.getElementById('leave-room-btn').click()`);
     await waitFor('host returns to start modal', async () => evaluate(host, `document.getElementById('start-modal').classList.contains('is-open') && !document.getElementById('waiting-modal').classList.contains('is-open')`));
-    await waitFor('guest receives room cancellation', async () => evaluate(guest, `document.getElementById('start-modal').classList.contains('is-open') && !document.getElementById('waiting-modal').classList.contains('is-open')`));
+    try {
+      await waitFor('guest receives room cancellation', async () => evaluate(guest, `document.getElementById('start-modal').classList.contains('is-open') && !document.getElementById('waiting-modal').classList.contains('is-open')`));
+    } catch (error) {
+      const diagnostics = await Promise.all([host, guest].map((client) => multiplayerState(client)));
+      throw new Error(`${error.message} | diagnostics=${JSON.stringify({ host: diagnostics[0], guest: diagnostics[1] })}`);
+    }
+    await waitFor('both Realtime channels to close', async () => {
+      const [hostState, guestState] = await Promise.all([multiplayerState(host), multiplayerState(guest)]);
+      return hostState.cleanup?.status === 'closed' && guestState.cleanup?.status === 'closed';
+    });
     const [hostState, guestState] = await Promise.all([multiplayerState(host), multiplayerState(guest)]);
     if (hostState.questionPanelVisible || guestState.questionPanelVisible) throw new Error(`Lobby leave opened a question panel: ${JSON.stringify({ host: hostState, guest: guestState })}`);
+    if (hostState.cleanup?.status !== 'closed' || guestState.cleanup?.status !== 'closed') throw new Error(`Realtime cleanup did not finish: ${JSON.stringify({ host: hostState, guest: guestState })}`);
     console.log('Multiplayer lobby leave E2E passed: host and guest returned to the start modal.');
   }
 
@@ -238,6 +264,9 @@ try {
   const [hostState, guestState] = await Promise.all([multiplayerState(host), multiplayerState(guest)]);
   if (hostState.round !== '1/5' || guestState.round !== '1/5') {
     throw new Error(`Unexpected multiplayer round state: ${JSON.stringify({ host: hostState, guest: guestState })}`);
+  }
+  if (hostState.fullscreenRequests < 1 || guestState.fullscreenRequests < 1) {
+    throw new Error(`Fullscreen should be requested only after both players start: ${JSON.stringify({ host: hostState, guest: guestState })}`);
   }
 
   if (expectHostNoSelection) {

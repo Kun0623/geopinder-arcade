@@ -23,6 +23,7 @@ const showRoundResultBody = index.match(/function showRoundResult\(\)\s*\{([\s\S
 const startTimerBody = index.match(/function startTimer\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function stopTimer\(\)/)?.[1] || '';
 const saveRankingBody = index.match(/async function saveRanking\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function shareGame\(/)?.[1] || '';
 const focusGameplayGlobeBody = index.match(/function focusGameplayGlobe\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function updateMapPins\(\)/)?.[1] || '';
+const beginMultiplayerBody = index.match(/async function beginMultiplayer\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*async function joinRoomAsGuest\(\)/)?.[1] || '';
 
 function expect(condition, message) {
   if (!condition) failures.push(message);
@@ -91,6 +92,7 @@ expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInit
 expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
 expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
 expect(/function requestArcadeFullscreen\(\)/.test(index) && /requestFullscreen\(\{ navigationUI: 'hide' \}\)/.test(index) && /requestArcadeFullscreen\(\);/.test(index), '게임 시작 시 사용자 제스처 기반 전체화면 요청과 안전한 폴백이 필요합니다.');
+expect(!/requestArcadeFullscreen\(\)/.test(beginMultiplayerBody) && /event: 'guest_joined'[\s\S]*?requestArcadeFullscreen\(\)/.test(index) && /event: 'game_start'[\s\S]*?requestArcadeFullscreen\(\)/.test(index), '2P 전체화면은 버튼 클릭 직후가 아니라 상대 접속 후 게임 시작 이벤트에서 요청해야 합니다.');
 expect(/id="keyboard-picker"/.test(index) && /id="country-search"/.test(index) && /id="latitude-input"/.test(index) && /id="longitude-input"/.test(index), '키보드 위치 선택에는 국가 검색과 위도·경도 입력 필드가 필요합니다.');
 expect(/function applyKeyboardGuess\(lat, lng, label\)/.test(index) && /currentPin = \{ lat, lng/.test(index), '키보드 위치 선택은 공통 currentPin 적용 경로를 사용해야 합니다.');
 expect(/function populateCountryOptions\(features\)/.test(index) && /country-options/.test(index), '국가 GeoJSON을 검색 가능한 datalist로 연결해야 합니다.');
@@ -98,6 +100,7 @@ expect(/위도는 -90~90, 경도는 -180~180/.test(index), '위경도 범위 오
 expect(/id="leave-room-btn"/.test(index) && /function leaveMultiplayerLobby\(\)/.test(index), '2P 대기방에는 방 나가기 동작이 필요합니다.');
 expect(/event: 'room_cancelled'/.test(index) && /function resetMultiplayerLobbyState\(/.test(index), '2P 방 나가기는 상대 통지와 로비 상태 초기화를 모두 처리해야 합니다.');
 expect(/function startLobbyRoomPoll\(\)/.test(index) && /maybeSingle\(\)/.test(index), '게스트는 대기 중 방 삭제를 폴링해 늦은 방 나가기도 감지해야 합니다.');
+expect(/async function closeRealtimeChannel\(\)/.test(index) && /await closeRealtimeChannel\(\)/.test(index) && /channel\.unsubscribe\(\)/.test(index), '2P 방 나가기는 Realtime unsubscribe 완료까지 기다려야 합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');

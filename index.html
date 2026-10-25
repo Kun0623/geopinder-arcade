@@ -918,6 +918,8 @@
       let myGlobe = null;
       let supportReturnModal = 'start-modal';
       let countryLocations = [];
+      let realtimeCleanupPromise = null;
+      window.__geopinderRealtimeCleanupState = { status: 'idle' };
 
       function showModal(id) {
         modals.forEach((modalId) => {
@@ -1600,9 +1602,32 @@
         maybeStartRematch();
       }
 
+      async function closeRealtimeChannel() {
+        if (realtimeCleanupPromise) return realtimeCleanupPromise;
+        const channel = roomChannel;
+        if (!channel) {
+          window.__geopinderRealtimeCleanupState = { status: 'closed', at: Date.now() };
+          return 'closed';
+        }
+        window.__geopinderRealtimeCleanupState = { status: 'closing', at: Date.now() };
+        realtimeCleanupPromise = Promise.resolve()
+          .then(() => channel.unsubscribe())
+          .then((result) => {
+            window.__geopinderRealtimeCleanupState = { status: 'closed', result: String(result || 'ok'), at: Date.now() };
+            if (roomChannel === channel) roomChannel = null;
+            return 'closed';
+          })
+          .catch((error) => {
+            window.__geopinderRealtimeCleanupState = { status: 'error', message: String(error), at: Date.now() };
+            if (roomChannel === channel) roomChannel = null;
+            return 'error';
+          })
+          .finally(() => { realtimeCleanupPromise = null; });
+        return realtimeCleanupPromise;
+      }
+
       function resetMultiplayerLobbyState(message = '') {
-        roomChannel?.unsubscribe();
-        roomChannel = null;
+        void closeRealtimeChannel();
         clearInterval(lobbyPollInterval);
         lobbyPollInterval = null;
         stopTimer();
@@ -1641,6 +1666,7 @@
             if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 180));
           }
           await deleteRoom;
+          await closeRealtimeChannel();
         } finally {
           resetMultiplayerLobbyState('대결방에서 나왔습니다.');
           setBusy(button, false, '방 나가기');
@@ -1656,12 +1682,14 @@
             if (myRole === 'host' && gamePhase === 'lobby') {
               roomChannel.send({ type: 'broadcast', event: 'game_start', payload: { matchId: currentMatchId, difficulty: currentDifficulty } });
               showToast('친구가 접속했습니다! 게임을 시작합니다.');
+              requestArcadeFullscreen();
               startGameMulti({ matchId: currentMatchId });
             }
           })
           .on('broadcast', { event: 'game_start' }, ({ payload }) => {
             if (myRole === 'guest' && gamePhase === 'lobby' && Number.isInteger(payload?.matchId)) {
               if (payload?.difficulty) setDifficulty(payload.difficulty);
+              requestArcadeFullscreen();
               startGameMulti({ matchId: payload.matchId });
             }
           })
@@ -1767,7 +1795,6 @@
       async function beginMultiplayer() {
         initAudio();
         if (!requireSupabase()) return;
-        requestArcadeFullscreen();
         const button = $('multi-btn');
         setBusy(button, true, 'CREATING...');
         const data = await getQuestions();
