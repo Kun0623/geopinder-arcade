@@ -210,6 +210,28 @@
       line-height: 1.35;
     }
 
+    .keyboard-picker {
+      margin-top: 12px;
+      padding: 9px;
+      border: 1px dashed #4f5a54;
+      background: rgba(0, 255, 255, 0.035);
+      text-align: left;
+    }
+    .keyboard-picker summary {
+      cursor: pointer;
+      color: var(--cyan);
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .keyboard-picker summary:focus-visible { outline: 2px solid var(--white); outline-offset: 3px; }
+    .keyboard-picker__hint { margin: 8px 0 0 !important; color: var(--muted) !important; font-size: 12px !important; line-height: 1.35 !important; }
+    .keyboard-picker__field { display: block; margin-top: 8px; color: var(--white); font-size: 13px; line-height: 1.25; }
+    .keyboard-picker .input-field { margin-top: 4px; padding: 8px; font-size: 15px; }
+    .keyboard-picker__coords { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .keyboard-picker__status { min-height: 1.25em; margin: 7px 0 0 !important; color: var(--gold) !important; font-size: 12px !important; line-height: 1.3 !important; }
+    .keyboard-picker__status[data-tone='error'] { color: var(--pink) !important; }
+    .keyboard-picker__status[data-tone='success'] { color: var(--green) !important; }
+
     .btn {
       width: 100%;
       margin: 14px 0 0;
@@ -614,6 +636,8 @@
       #quiz-img { height: clamp(82px, 15dvh, 130px); margin-bottom: 8px; border-width: 1px; }
       #quiz-hint { min-height: 2.6em; font-size: clamp(13px, 3.8vw, 16px); }
       #sync-msg { margin-top: 7px; font-size: 13px; }
+      #quiz-panel { max-height: calc(100dvh - var(--safe-bottom) - 10px); overflow-y: auto; }
+      .keyboard-picker__coords { gap: 5px; }
       .btn { padding: 10px 9px; border-width: 2px; box-shadow: 3px 3px 0 currentColor; font-size: clamp(14px, 3.8vw, 16px); }
       .diff-btn { min-height: 62px; padding: 8px 4px; gap: 4px; }
       .btn:active:not(:disabled) { transform: translate(3px, 3px); }
@@ -658,6 +682,24 @@
       <img id="quiz-img" src="" alt="문제 랜드마크 이미지">
       <div id="quiz-hint">문제를 불러오는 중입니다.</div>
       <div id="sync-msg" aria-live="polite">상대방의 제출을 기다리는 중입니다.</div>
+      <details id="keyboard-picker" class="keyboard-picker" open>
+        <summary>키보드로 위치 선택</summary>
+        <p class="keyboard-picker__hint">국가를 검색하거나 위도·경도를 입력한 뒤 위치 적용을 누르세요.</p>
+        <label class="keyboard-picker__field" for="country-search">국가 검색
+            <input id="country-search" class="input-field" type="search" list="country-options" autocomplete="off" placeholder="영문 국가명 예: France">
+        </label>
+        <datalist id="country-options"></datalist>
+        <div class="keyboard-picker__coords">
+          <label class="keyboard-picker__field" for="latitude-input">위도 (-90~90)
+            <input id="latitude-input" class="input-field" type="number" inputmode="decimal" min="-90" max="90" step="any" placeholder="48.8584">
+          </label>
+          <label class="keyboard-picker__field" for="longitude-input">경도 (-180~180)
+            <input id="longitude-input" class="input-field" type="number" inputmode="decimal" min="-180" max="180" step="any" placeholder="2.2945">
+          </label>
+        </div>
+        <button id="apply-location-btn" class="btn btn-blue" type="button">위치 적용</button>
+        <p id="keyboard-picker-status" class="keyboard-picker__status" role="status" aria-live="polite"></p>
+      </details>
       <button id="submit-btn" class="btn btn-red" type="button" disabled>여기가 확실해!</button>
     </aside>
 
@@ -720,6 +762,7 @@
         <input id="invite-link" class="input-field" type="text" readonly aria-label="초대 링크">
         <button id="copy-link-btn" class="btn btn-blue" type="button">링크 복사 (COPY)</button>
         <p id="wait-msg" style="color:var(--pink);font-size:16px">상대방의 접속을 기다리는 중입니다.</p>
+        <button id="leave-room-btn" class="btn btn-white" type="button">방 나가기</button>
       </section>
     </div>
 
@@ -873,6 +916,7 @@
       let audioCtx = null;
       let myGlobe = null;
       let supportReturnModal = 'start-modal';
+      let countryLocations = [];
 
       function showModal(id) {
         modals.forEach((modalId) => {
@@ -904,6 +948,88 @@
           toast.style.animation = 'toast-out 180ms ease-in forwards';
           window.setTimeout(() => toast.remove(), 200);
         }, 2800);
+      }
+
+      function setKeyboardPickerStatus(message = '', tone = 'info') {
+        const status = $('keyboard-picker-status');
+        status.textContent = message;
+        status.dataset.tone = tone;
+      }
+
+      function collectCoordinatePairs(value, pairs = []) {
+        if (!Array.isArray(value)) return pairs;
+        if (value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
+          pairs.push([Number(value[0]), Number(value[1])]);
+          return pairs;
+        }
+        value.forEach((child) => collectCoordinatePairs(child, pairs));
+        return pairs;
+      }
+
+      function featureCentroid(feature) {
+        const pairs = collectCoordinatePairs(feature?.geometry?.coordinates);
+        if (!pairs.length) return null;
+        return {
+          lat: pairs.reduce((sum, pair) => sum + pair[1], 0) / pairs.length,
+          lng: pairs.reduce((sum, pair) => sum + pair[0], 0) / pairs.length
+        };
+      }
+
+      function populateCountryOptions(features) {
+        const seen = new Set();
+        countryLocations = features.map((feature) => {
+          const properties = feature?.properties || {};
+          const name = String(properties.ADMIN || properties.NAME_EN || properties.NAME || properties.name || '').trim();
+          const centroid = featureCentroid(feature);
+          if (!name || !centroid || seen.has(name.toLowerCase())) return null;
+          seen.add(name.toLowerCase());
+          return { name, ...centroid };
+        }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
+        $('country-options').replaceChildren(...countryLocations.map((country) => {
+          const option = document.createElement('option');
+          option.value = country.name;
+          return option;
+        }));
+      }
+
+      function applyKeyboardGuess(lat, lng, label) {
+        if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+          setKeyboardPickerStatus('위도는 -90~90, 경도는 -180~180 사이로 입력하세요.', 'error');
+          return false;
+        }
+        currentPin = { lat, lng, name: myRole === 'host' ? '1P' : '2P', color: '#ff3366', type: 'guess' };
+        updateMapPins();
+        $('submit-btn').disabled = false;
+        setKeyboardPickerStatus(`${label} 위치를 선택했습니다. 제출 버튼으로 확정하세요.`, 'success');
+        playSound('pin');
+        if (myGlobe) myGlobe.pointOfView({ lat, lng, altitude: 2.2 }, 500);
+        if (isMultiplayer && roomChannel) {
+          roomChannel.send({ type: 'broadcast', event: 'pin_move', payload: { matchId: currentMatchId, round: currentRound, lat, lng } });
+        }
+        return true;
+      }
+
+      function applyCountryGuess() {
+        const query = $('country-search').value.trim().toLowerCase();
+        if (!query) return false;
+        const exact = countryLocations.find((country) => country.name.toLowerCase() === query);
+        const matches = exact ? [exact] : countryLocations.filter((country) => country.name.toLowerCase().includes(query));
+        if (matches.length !== 1) {
+          setKeyboardPickerStatus(matches.length > 1 ? '검색 결과가 여러 개입니다. 국가명을 더 입력하세요.' : '국가를 찾지 못했습니다. 위경도를 직접 입력해 보세요.', 'error');
+          return false;
+        }
+        const country = matches[0];
+        $('latitude-input').value = country.lat.toFixed(4);
+        $('longitude-input').value = country.lng.toFixed(4);
+        return applyKeyboardGuess(country.lat, country.lng, country.name);
+      }
+
+      function applyCoordinateGuess() {
+        return applyKeyboardGuess(Number($('latitude-input').value), Number($('longitude-input').value), '입력한 좌표');
+      }
+
+      function applyLocationGuess() {
+        return $('country-search').value.trim() ? applyCountryGuess() : applyCoordinateGuess();
       }
 
       function initAudio() {
@@ -1215,6 +1341,7 @@
         ]).then(([countriesResult, statesResult]) => {
           if (countriesResult.status === 'fulfilled' && Array.isArray(countriesResult.value.features)) {
             countriesResult.value.features.forEach((feature) => { feature.properties.TYPE = 'Country'; });
+            populateCountryOptions(countriesResult.value.features);
             geoData.push(...countriesResult.value.features);
           }
           if (statesResult.status === 'fulfilled' && Array.isArray(statesResult.value.features)) {
@@ -1264,14 +1391,8 @@
       }
 
       function handleMapClick(lat, lng) {
-        if (!myGlobe || isResultShown || myGuessSubmitted || !currentQuestions.length) return;
-        playSound('pin');
-        currentPin = { lat, lng, name: myRole === 'host' ? '1P' : '2P', color: '#ff3366', type: 'guess' };
-        updateMapPins();
-        $('submit-btn').disabled = false;
-        if (isMultiplayer && roomChannel) {
-          roomChannel.send({ type: 'broadcast', event: 'pin_move', payload: { matchId: currentMatchId, round: currentRound, lat, lng } });
-        }
+        if (isResultShown || myGuessSubmitted || !currentQuestions.length) return;
+        applyKeyboardGuess(lat, lng, '지구본에서 선택한');
       }
 
       function loadQuestion(index) {
@@ -1297,6 +1418,10 @@
           myGlobe.arcsData([]);
           myGlobe.controls().autoRotate = true;
         }
+        $('country-search').value = '';
+        $('latitude-input').value = '';
+        $('longitude-input').value = '';
+        setKeyboardPickerStatus('');
         startTimer();
       }
 
@@ -1474,6 +1599,47 @@
         maybeStartRematch();
       }
 
+      function resetMultiplayerLobbyState(message = '') {
+        roomChannel?.unsubscribe();
+        roomChannel = null;
+        stopTimer();
+        clearInterval(adInterval);
+        isMultiplayer = false;
+        myRole = 'host';
+        roomCode = null;
+        currentMatchId = 1;
+        gamePhase = 'lobby';
+        currentQuestions = [];
+        currentPin = null;
+        opponentPin = null;
+        $('quiz-panel').classList.add('hidden');
+        $('multi-badge').style.display = 'none';
+        $('wait-msg').textContent = '상대방의 접속을 기다리는 중입니다.';
+        $('multi-btn').disabled = false;
+        $('multi-btn').textContent = '2P 대결하기';
+        window.history.replaceState({}, '', window.location.pathname);
+        closeModal('waiting-modal');
+        showModal('start-modal');
+        if (message) showToast(message);
+      }
+
+      async function leaveMultiplayerLobby() {
+        if (!isMultiplayer || gamePhase !== 'lobby') return;
+        const channel = roomChannel;
+        const button = $('leave-room-btn');
+        setBusy(button, true, '나가는 중...');
+        try {
+          const cancellation = { type: 'broadcast', event: 'room_cancelled', payload: { role: myRole } };
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            await channel?.send(cancellation);
+            if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, 180));
+          }
+        } finally {
+          resetMultiplayerLobbyState('대결방에서 나왔습니다.');
+          setBusy(button, false, '방 나가기');
+        }
+      }
+
       function setupRealtimeChannel() {
         if (!supabaseClient || !roomCode) return;
         roomChannel?.unsubscribe();
@@ -1491,6 +1657,9 @@
               if (payload?.difficulty) setDifficulty(payload.difficulty);
               startGameMulti({ matchId: payload.matchId });
             }
+          })
+          .on('broadcast', { event: 'room_cancelled' }, () => {
+            if (gamePhase === 'lobby') resetMultiplayerLobbyState('호스트가 대결방을 닫았습니다.');
           })
           .on('broadcast', { event: 'pin_move' }, ({ payload }) => {
             if (gamePhase === 'playing' && !isResultShown && payload?.matchId === currentMatchId && payload.round === currentRound && Number.isFinite(payload.lat) && Number.isFinite(payload.lng)) {
@@ -1714,8 +1883,22 @@
       $('copy-link-btn').addEventListener('click', () => {
         initAudio();
         playSound('pin');
-        navigator.clipboard?.writeText($('invite-link').value).then(() => showToast('링크가 복사되었습니다. 친구에게 보내세요.'));
+        navigator.clipboard?.writeText($('invite-link').value).then(() => showToast('게임 링크가 복사되었습니다. 친구에게 보내세요.'));
       });
+      $('apply-location-btn').addEventListener('click', () => {
+        initAudio();
+        applyLocationGuess();
+      });
+      ['country-search', 'latitude-input', 'longitude-input'].forEach((id) => {
+        $(id).addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            initAudio();
+            applyLocationGuess();
+          }
+        });
+      });
+      $('leave-room-btn').addEventListener('click', leaveMultiplayerLobby);
       $('submit-btn').addEventListener('click', submitGuess);
       $('next-btn').addEventListener('click', () => {
         initAudio();

@@ -91,6 +91,12 @@ expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInit
 expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
 expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
 expect(/function requestArcadeFullscreen\(\)/.test(index) && /requestFullscreen\(\{ navigationUI: 'hide' \}\)/.test(index) && /requestArcadeFullscreen\(\);/.test(index), '게임 시작 시 사용자 제스처 기반 전체화면 요청과 안전한 폴백이 필요합니다.');
+expect(/id="keyboard-picker"/.test(index) && /id="country-search"/.test(index) && /id="latitude-input"/.test(index) && /id="longitude-input"/.test(index), '키보드 위치 선택에는 국가 검색과 위도·경도 입력 필드가 필요합니다.');
+expect(/function applyKeyboardGuess\(lat, lng, label\)/.test(index) && /currentPin = \{ lat, lng/.test(index), '키보드 위치 선택은 공통 currentPin 적용 경로를 사용해야 합니다.');
+expect(/function populateCountryOptions\(features\)/.test(index) && /country-options/.test(index), '국가 GeoJSON을 검색 가능한 datalist로 연결해야 합니다.');
+expect(/위도는 -90~90, 경도는 -180~180/.test(index), '위경도 범위 오류를 사용자에게 안내해야 합니다.');
+expect(/id="leave-room-btn"/.test(index) && /function leaveMultiplayerLobby\(\)/.test(index), '2P 대기방에는 방 나가기 동작이 필요합니다.');
+expect(/event: 'room_cancelled'/.test(index) && /function resetMultiplayerLobbyState\(/.test(index), '2P 방 나가기는 상대 통지와 로비 상태 초기화를 모두 처리해야 합니다.');
 
 if (failures.length) {
   console.error('Static validation failed:');

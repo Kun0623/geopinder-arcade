@@ -9,6 +9,7 @@ const debugPort = 9400 + (process.pid % 400);
 const guestJoinDelayMs = Number(process.env.GEOPINDER_GUEST_JOIN_DELAY_MS || 500);
 const enableRealtimeTrace = process.env.GEOPINDER_REALTIME_TRACE === '1';
 const expectHostNoSelection = process.env.GEOPINDER_TEST_HOST_NO_SELECTION === '1';
+const expectLobbyLeave = process.env.GEOPINDER_TEST_LOBBY_LEAVE === '1';
 const profileDir = await mkdtemp(join(tmpdir(), 'geopinder-mp-cdp-'));
 let chrome;
 const sockets = [];
@@ -214,7 +215,17 @@ try {
   await waitFor('guest waiting modal', async () => evaluate(guest, `Boolean(document.getElementById('waiting-modal'))`));
   await installErrorCollector(guest);
 
-  try {
+  if (expectLobbyLeave) {
+    await evaluate(host, `document.getElementById('leave-room-btn').click()`);
+    await waitFor('host returns to start modal', async () => evaluate(host, `document.getElementById('start-modal').classList.contains('is-open') && !document.getElementById('waiting-modal').classList.contains('is-open')`));
+    await waitFor('guest receives room cancellation', async () => evaluate(guest, `document.getElementById('start-modal').classList.contains('is-open') && !document.getElementById('waiting-modal').classList.contains('is-open')`));
+    const [hostState, guestState] = await Promise.all([multiplayerState(host), multiplayerState(guest)]);
+    if (hostState.questionPanelVisible || guestState.questionPanelVisible) throw new Error(`Lobby leave opened a question panel: ${JSON.stringify({ host: hostState, guest: guestState })}`);
+    console.log('Multiplayer lobby leave E2E passed: host and guest returned to the start modal.');
+  }
+
+  if (!expectLobbyLeave) {
+    try {
     await waitFor('both players to enter the first multiplayer round', async () => {
       const [hostState, guestState] = await Promise.all([multiplayerState(host), multiplayerState(guest)]);
       return hostState.questionPanelVisible && guestState.questionPanelVisible && !hostState.waitingModalOpen && !guestState.waitingModalOpen;
@@ -268,8 +279,9 @@ try {
       throw new Error(`Unexpected multiplayer no-selection state: ${JSON.stringify({ hostResult, guestResult })}`);
     }
     console.log('Multiplayer no-selection E2E passed: timed-out host received 0 points and guest saw 선택 안 함.');
-  } else {
-    console.log('Multiplayer start E2E passed: host and guest entered round 1 with waiting modals closed.');
+    } else {
+      console.log('Multiplayer start E2E passed: host and guest entered round 1 with waiting modals closed.');
+    }
   }
   void browserVersion;
 } finally {
