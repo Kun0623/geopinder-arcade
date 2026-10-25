@@ -1579,8 +1579,8 @@
 
       async function beginMultiplayer() {
         initAudio();
-        requestArcadeFullscreen();
         if (!requireSupabase()) return;
+        requestArcadeFullscreen();
         const button = $('multi-btn');
         setBusy(button, true, 'CREATING...');
         const data = await getQuestions();
