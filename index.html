@@ -50,6 +50,8 @@
   <script src="https://unpkg.com/globe.gl"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@1.530/neodgm/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --bg: #050505;
@@ -108,7 +110,8 @@
     }
 
     button,
-    input { font: inherit; }
+    input,
+    textarea { font: inherit; }
 
     button { touch-action: manipulation; }
 
@@ -369,12 +372,35 @@
       .start-share-icon:hover { background: var(--white); color: #000; transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--white), 0 0 14px rgba(255,255,255,.8); }
     }
 
-    .report-form { display: grid; gap: 12px; text-align: left; }
+    .report-card { position: relative; text-align: left; }
+    .report-card h2 { width: calc(100% - 74px); margin-right: 0; color: var(--cyan); text-align: center; text-shadow: 0 0 12px rgba(0, 255, 255, 0.5); }
+    .report-form { display: grid; gap: 13px; text-align: left; }
     .report-form label { display: grid; gap: 6px; color: var(--white); font-size: 14px; }
-    .report-form textarea { min-height: 92px; resize: vertical; }
-    .report-form .input-field { margin: 0; }
+    .report-form textarea { min-height: 92px; resize: vertical; text-align: left; }
+    .report-form .input-field { margin: 0; text-align: left; }
+    .report-form input[type='number'] { font-variant-numeric: tabular-nums; }
+    .report-location-fieldset { display: grid; gap: 10px; margin: 0; padding: 12px; border: 2px dashed var(--cyan); }
+    .report-location-fieldset legend { padding: 0 6px; color: var(--cyan); font-size: 14px; }
+    .report-location-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .report-location-mode .btn { min-height: 44px; margin: 0; padding: 8px; font-size: 14px; }
+    .report-location-mode .btn.is-selected { background: var(--cyan); color: #000; }
+    .report-coordinate-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .report-coordinate-grid label { font-size: 13px; }
+    .report-map-wrap { display: grid; gap: 8px; }
+    .report-map-wrap[hidden] { display: none; }
+    #report-map { width: 100%; height: clamp(220px, 32dvh, 310px); border: 2px solid var(--cyan); background: #0a171b; }
+    #report-map .leaflet-control-attribution { color: #1a2427; font-family: system-ui, sans-serif; font-size: 9px; }
+    #report-map .leaflet-control-attribution a { color: #28565d; }
+    #report-map .report-map-marker { background: transparent; border: 0; }
+    #report-map .report-map-pin { display: block; width: 24px; height: 24px; border: 3px solid #000; border-radius: 50% 50% 50% 0; background: var(--pink); box-shadow: 0 0 0 2px var(--white), 0 0 13px var(--pink); transform: rotate(-45deg); }
+    #report-map .report-map-pin::after { display: block; width: 8px; height: 8px; margin: 5px; border-radius: 50%; background: var(--white); content: ''; }
+    .report-map-hint, .report-location-status, .report-photo-help, .report-photo-status { margin: 0 !important; color: var(--muted) !important; font-size: 12px !important; line-height: 1.4 !important; }
+    .report-location-status[data-tone='ready'], .report-photo-status[data-tone='ready'] { color: var(--green) !important; }
+    .report-location-status[data-tone='error'], .report-photo-status[data-tone='error'], .report-status[data-tone='error'] { color: var(--pink) !important; }
+    .report-file-input { width: 100%; padding: 9px; border: 2px dashed var(--gold); background: #000; color: var(--white); font-size: 13px; }
+    .report-photo-preview { display: block; width: 100%; max-height: 190px; border: 2px solid var(--gold); object-fit: cover; background: #0c1516; }
+    .report-photo-preview[hidden] { display: none; }
     .report-status { min-height: 1.4em; margin: 0; color: var(--cyan) !important; font-size: 13px !important; }
-    .report-status[data-tone='error'] { color: var(--pink) !important; }
 
     .modal h1,
     .modal h2,
@@ -763,9 +789,9 @@
     </div>
 
     <div id="report-modal" class="modal" role="presentation" aria-hidden="true">
-      <section class="modal-card modal-card--cyan" role="dialog" aria-modal="true" aria-labelledby="report-title" aria-describedby="report-description">
+      <section class="modal-card modal-card--cyan report-card" role="dialog" aria-modal="true" aria-labelledby="report-title" aria-describedby="report-description">
         <button id="report-close-btn" class="btn support-close" type="button" aria-label="문제 제보 창 닫기">닫기</button>
-        <h2 id="report-title" style="color:var(--cyan)">문제 제보</h2>
+        <h2 id="report-title">문제 제보</h2>
         <p id="report-description" class="modal-subtitle">새로운 랜드마크 문제를 함께 만들어 주세요.</p>
         <form id="report-form" class="report-form" novalidate>
           <label for="report-title-input">랜드마크 이름
@@ -774,19 +800,39 @@
           <label for="report-hint-input">문제 힌트
             <textarea id="report-hint-input" class="input-field" maxlength="500" required placeholder="플레이어가 위치를 추측할 수 있는 힌트를 적어 주세요."></textarea>
           </label>
-          <label for="report-location-input">위치 (도시·국가 또는 위도, 경도)
-            <input id="report-location-input" class="input-field" type="text" maxlength="160" required placeholder="서울, 대한민국 또는 37.5665, 126.9780">
+          <fieldset class="report-location-fieldset">
+            <legend>장소 설정 <span aria-hidden="true">*</span></legend>
+            <div class="report-location-mode" role="group" aria-label="장소 설정 방식">
+              <button id="report-location-direct-btn" class="btn btn-white is-selected" type="button" aria-pressed="true">위도·경도 입력</button>
+              <button id="report-location-map-btn" class="btn btn-blue" type="button" aria-pressed="false">지도에서 선택</button>
+            </div>
+            <div id="report-coordinate-fields" class="report-coordinate-grid">
+              <label for="report-latitude-input">위도 (Latitude)
+                <input id="report-latitude-input" class="input-field" type="number" inputmode="decimal" min="-90" max="90" step="0.000001" placeholder="37.579617" aria-describedby="report-location-status">
+              </label>
+              <label for="report-longitude-input">경도 (Longitude)
+                <input id="report-longitude-input" class="input-field" type="number" inputmode="decimal" min="-180" max="180" step="0.000001" placeholder="126.977041" aria-describedby="report-location-status">
+              </label>
+            </div>
+            <div id="report-map-wrap" class="report-map-wrap" hidden>
+              <p class="report-map-hint">지도를 클릭하면 네온 핀이 표시되고 좌표가 자동 입력됩니다.</p>
+              <div id="report-map" aria-label="랜드마크 위치 선택 지도"></div>
+            </div>
+            <p id="report-location-status" class="report-location-status" role="status" aria-live="polite" data-tone="info">위도와 경도를 직접 입력해 주세요.</p>
+          </fieldset>
+          <label for="report-photo-input">랜드마크 사진 <span aria-hidden="true">*</span>
+            <input id="report-photo-input" class="report-file-input" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="report-photo-help report-photo-status">
+            <span id="report-photo-help" class="report-photo-help">JPEG, PNG, WebP만 가능하며 파일 크기는 최대 10MB입니다. 사진은 검토용으로만 비공개 보관됩니다.</span>
           </label>
-          <label for="report-image-input">참고 이미지 URL (선택)
-            <input id="report-image-input" class="input-field" type="url" maxlength="500" placeholder="https://..."><span class="visually-hidden">저작권이 확인된 공개 이미지 주소를 입력하세요.</span>
-          </label>
+          <img id="report-photo-preview" class="report-photo-preview" alt="선택한 제보 사진 미리보기" hidden>
+          <p id="report-photo-status" class="report-photo-status" role="status" aria-live="polite" data-tone="info"></p>
           <label for="report-contact-input">회신 이메일 (선택)
             <input id="report-contact-input" class="input-field" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com">
           </label>
           <p id="report-status" class="report-status" role="status" aria-live="polite"></p>
           <button id="report-submit-btn" class="btn btn-blue" type="submit">제보 내용 보내기</button>
         </form>
-        <p class="support-footnote">이미지는 저작권과 출처를 확인한 자료만 제보해 주세요.</p>
+        <p class="support-footnote">사진은 직접 촬영했거나 사용 권한이 있는 자료만 등록해 주세요.</p>
       </section>
     </div>
 
@@ -885,7 +931,7 @@
       supabaseUrl: '',
       supabaseAnonKey: '',
       adsenseAdSlot: '',
-      questionSubmissionUrl: ''
+      questionSubmissionBucket: 'question-submissions'
     };
   </script>
 
@@ -903,6 +949,8 @@
 
       const TOTAL_ROUNDS = 5;
       const INITIALS_STORAGE_KEY = 'geopinder.playerInitials.v1';
+      const REPORT_PHOTO_MAX_BYTES = 10 * 1024 * 1024;
+      const REPORT_ALLOWED_PHOTO_TYPES = Object.freeze(['image/jpeg', 'image/png', 'image/webp']);
       const GAMEPLAY_START_ALTITUDE = 1.35;
       // 텍스처가 흐려지기 시작하는 근접 영역을 피하는 보수적인 줌 상한입니다.
       const GAMEPLAY_MIN_DISTANCE_RATIO = 1.70;
@@ -986,6 +1034,10 @@
       let myGlobe = null;
       let landmarkAttributions = new Map();
       let supportReturnModal = 'start-modal';
+      let reportLocationMode = 'coordinates';
+      let reportMap = null;
+      let reportMapMarker = null;
+      let reportPhotoPreviewUrl = null;
       let realtimeCleanupPromise = null;
       window.__geopinderRealtimeCleanupState = { status: 'idle' };
 
@@ -1098,8 +1150,168 @@
         status.dataset.tone = tone;
       }
 
+      function setReportLocationStatus(message = '', tone = 'info') {
+        const status = $('report-location-status');
+        status.textContent = message;
+        status.dataset.tone = tone;
+      }
+
+      function setReportPhotoStatus(message = '', tone = 'info') {
+        const status = $('report-photo-status');
+        status.textContent = message;
+        status.dataset.tone = tone;
+      }
+
+      function formatReportCoordinate(value) {
+        return Number(value).toFixed(6);
+      }
+
+      function readReportCoordinates() {
+        const latitudeInput = $('report-latitude-input');
+        const longitudeInput = $('report-longitude-input');
+        const latitudeValue = latitudeInput.value.trim();
+        const longitudeValue = longitudeInput.value.trim();
+        const latitude = Number(latitudeValue);
+        const longitude = Number(longitudeValue);
+        const valid = Boolean(latitudeValue) && Boolean(longitudeValue)
+          && Number.isFinite(latitude) && Number.isFinite(longitude)
+          && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+        latitudeInput.setAttribute('aria-invalid', String(!valid));
+        longitudeInput.setAttribute('aria-invalid', String(!valid));
+        return valid ? { latitude, longitude } : null;
+      }
+
+      function setReportCoordinates(latitude, longitude, source = 'coordinates') {
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+        $('report-latitude-input').value = formatReportCoordinate(latitude);
+        $('report-longitude-input').value = formatReportCoordinate(longitude);
+        $('report-latitude-input').setAttribute('aria-invalid', 'false');
+        $('report-longitude-input').setAttribute('aria-invalid', 'false');
+        if (reportMap) {
+          const position = [latitude, longitude];
+          if (!reportMapMarker) {
+            reportMapMarker = window.L.marker(position, {
+              icon: window.L.divIcon({ className: 'report-map-marker', html: '<span class="report-map-pin" aria-hidden="true"></span>', iconSize: [26, 34], iconAnchor: [13, 32] })
+            }).addTo(reportMap);
+          } else {
+            reportMapMarker.setLatLng(position);
+          }
+        }
+        setReportLocationStatus(source === 'map'
+          ? `지도 핀 선택 완료: ${formatReportCoordinate(latitude)}, ${formatReportCoordinate(longitude)}`
+          : '위도와 경도가 입력되었습니다.', 'ready');
+      }
+
+      function initializeReportMap() {
+        const mapElement = $('report-map');
+        if (reportMap) {
+          window.setTimeout(() => reportMap.invalidateSize(), 0);
+          return true;
+        }
+        if (!window.L) {
+          setReportLocationStatus('지도를 불러오지 못했습니다. 위도와 경도를 직접 입력해 주세요.', 'error');
+          return false;
+        }
+        reportMap = window.L.map(mapElement, { zoomControl: true, worldCopyJump: true }).setView([20, 0], 2);
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(reportMap);
+        reportMap.on('click', (event) => setReportCoordinates(event.latlng.lat, event.latlng.lng, 'map'));
+        const coordinates = readReportCoordinates();
+        if (coordinates) {
+          setReportCoordinates(coordinates.latitude, coordinates.longitude, 'coordinates');
+          reportMap.setView([coordinates.latitude, coordinates.longitude], 10);
+        }
+        window.setTimeout(() => reportMap.invalidateSize(), 0);
+        return true;
+      }
+
+      function setReportLocationMode(mode) {
+        const useMap = mode === 'map';
+        reportLocationMode = useMap ? 'map' : 'coordinates';
+        $('report-location-direct-btn').classList.toggle('is-selected', !useMap);
+        $('report-location-map-btn').classList.toggle('is-selected', useMap);
+        $('report-location-direct-btn').setAttribute('aria-pressed', String(!useMap));
+        $('report-location-map-btn').setAttribute('aria-pressed', String(useMap));
+        $('report-map-wrap').hidden = !useMap;
+        $('report-latitude-input').readOnly = useMap;
+        $('report-longitude-input').readOnly = useMap;
+        if (useMap) {
+          setReportLocationStatus('지도에서 랜드마크 위치를 한 번 클릭해 주세요.', 'info');
+          window.setTimeout(initializeReportMap, 0);
+        } else if (!readReportCoordinates()) {
+          setReportLocationStatus('위도와 경도를 직접 입력해 주세요.', 'info');
+        }
+      }
+
+      function clearReportPhotoPreview() {
+        if (reportPhotoPreviewUrl) URL.revokeObjectURL(reportPhotoPreviewUrl);
+        reportPhotoPreviewUrl = null;
+        const preview = $('report-photo-preview');
+        preview.removeAttribute('src');
+        preview.hidden = true;
+        setReportPhotoStatus('');
+      }
+
+      function validateReportPhoto(file) {
+        if (!file) return { valid: false, message: '랜드마크 사진을 등록해 주세요.' };
+        if (!REPORT_ALLOWED_PHOTO_TYPES.includes(file.type)) return { valid: false, message: 'JPEG, PNG, WebP 사진만 등록할 수 있습니다.' };
+        if (file.size > REPORT_PHOTO_MAX_BYTES) return { valid: false, message: '사진 용량은 최대 10MB입니다.' };
+        return { valid: true, message: '' };
+      }
+
+      function updateReportPhotoPreview() {
+        const input = $('report-photo-input');
+        const file = input.files?.[0];
+        const validation = validateReportPhoto(file);
+        input.setCustomValidity(validation.valid ? '' : validation.message);
+        clearReportPhotoPreview();
+        if (!validation.valid) {
+          if (file) input.value = '';
+          setReportPhotoStatus(validation.message, 'error');
+          return false;
+        }
+        reportPhotoPreviewUrl = URL.createObjectURL(file);
+        const preview = $('report-photo-preview');
+        preview.src = reportPhotoPreviewUrl;
+        preview.hidden = false;
+        setReportPhotoStatus(`${file.name} · ${(file.size / 1024 / 1024).toFixed(1)}MB`, 'ready');
+        return true;
+      }
+
+      function getReportPhotoExtension(file) {
+        const byMime = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+        return byMime[file.type] || 'jpg';
+      }
+
+      async function uploadSubmissionPhoto(file) {
+        const bucket = typeof config.questionSubmissionBucket === 'string' && config.questionSubmissionBucket.trim()
+          ? config.questionSubmissionBucket.trim()
+          : 'question-submissions';
+        const uploadId = typeof crypto?.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        const path = `pending/${uploadId}.${getReportPhotoExtension(file)}`;
+        const { error } = await supabaseClient.storage.from(bucket).upload(path, file, {
+          cacheControl: '3600',
+          contentType: file.type,
+          upsert: false
+        });
+        if (error) throw new Error(error.message || '사진 업로드에 실패했습니다.');
+        return { bucket, path, fileName: file.name };
+      }
+
       function openReportModal() {
         $('report-form').reset();
+        clearReportPhotoPreview();
+        $('report-latitude-input').setAttribute('aria-invalid', 'false');
+        $('report-longitude-input').setAttribute('aria-invalid', 'false');
+        if (reportMapMarker && reportMap) {
+          reportMap.removeLayer(reportMapMarker);
+          reportMapMarker = null;
+        }
+        setReportLocationMode('coordinates');
         setReportStatus('');
         setBusy($('report-submit-btn'), false, '제보 내용 보내기');
         showModal('report-modal');
@@ -1113,45 +1325,56 @@
         event.preventDefault();
         const form = $('report-form');
         if (!form.reportValidity()) {
-          setReportStatus('랜드마크 이름, 힌트, 위치를 입력해 주세요.', 'error');
+          setReportStatus('랜드마크 이름, 힌트, 사진을 모두 입력해 주세요.', 'error');
+          return;
+        }
+        const coordinates = readReportCoordinates();
+        if (!coordinates) {
+          setReportLocationStatus('위도는 -90~90, 경도는 -180~180 사이로 입력해 주세요.', 'error');
+          setReportStatus('장소 좌표를 확인해 주세요.', 'error');
+          return;
+        }
+        const photo = $('report-photo-input').files?.[0];
+        const photoValidation = validateReportPhoto(photo);
+        if (!photoValidation.valid) {
+          setReportPhotoStatus(photoValidation.message, 'error');
+          setReportStatus('필수 사진을 확인해 주세요.', 'error');
+          return;
+        }
+        if (!supabaseClient) {
+          setReportStatus('제보 접수는 Supabase 연결 설정 후 사용할 수 있습니다.', 'error');
           return;
         }
         const report = {
           title: $('report-title-input').value.trim(),
           hint: $('report-hint-input').value.trim(),
-          location: $('report-location-input').value.trim(),
-          image_url: $('report-image-input').value.trim() || null,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          location_method: reportLocationMode,
           contact_email: $('report-contact-input').value.trim() || null,
-          source: 'geopinder-arcade',
-          created_at: new Date().toISOString()
+          source: 'geopinder-arcade'
         };
         const button = $('report-submit-btn');
         setBusy(button, true, '전송 중...');
-        setReportStatus('제보 내용을 안전하게 전달하는 중입니다.');
+        setReportStatus('사진을 업로드하고 제보 내용을 접수하는 중입니다.');
         try {
-          const reportUrl = typeof config.questionSubmissionUrl === 'string' ? config.questionSubmissionUrl.trim() : '';
-          if (reportUrl) {
-            const url = new URL(reportUrl, window.location.origin);
-            url.searchParams.set('title', report.title);
-            url.searchParams.set('hint', report.hint);
-            url.searchParams.set('location', report.location);
-            window.open(url.toString(), '_blank', 'noopener,noreferrer');
-            setReportStatus('제보 양식을 새 창에서 열었습니다. 내용을 확인해 제출해 주세요.');
-          } else if (supabaseClient) {
-            const { error } = await supabaseClient.from('geopinder_question_submissions').insert([report]);
-            if (error) {
-              const body = [`랜드마크: ${report.title}`, `힌트: ${report.hint}`, `위치: ${report.location}`, `이미지 URL: ${report.image_url || '(없음)'}`, `회신 이메일: ${report.contact_email || '(없음)'}`].join('\n');
-              await navigator.clipboard?.writeText(body);
-              setReportStatus('온라인 접수 준비 중입니다. 제보 내용을 클립보드에 복사했습니다.', 'error');
-            } else {
-              setReportStatus('제보가 접수되었습니다. 감사합니다!');
-              form.reset();
-            }
-          } else {
-            const body = [`랜드마크: ${report.title}`, `힌트: ${report.hint}`, `위치: ${report.location}`, `이미지 URL: ${report.image_url || '(없음)'}`, `회신 이메일: ${report.contact_email || '(없음)'}`].join('\n');
-            await navigator.clipboard?.writeText(body);
-            setReportStatus('제보 내용이 클립보드에 복사되었습니다. 운영자에게 전달해 주세요.');
+          const uploadedPhoto = await uploadSubmissionPhoto(photo);
+          const { error } = await supabaseClient.from('geopinder_question_submissions').insert([{
+            ...report,
+            photo_storage_path: uploadedPhoto.path,
+            photo_file_name: uploadedPhoto.fileName,
+            photo_content_type: photo.type,
+            photo_size_bytes: photo.size
+          }]);
+          if (error) throw new Error(error.message || '제보 저장에 실패했습니다.');
+          form.reset();
+          clearReportPhotoPreview();
+          if (reportMapMarker && reportMap) {
+            reportMap.removeLayer(reportMapMarker);
+            reportMapMarker = null;
           }
+          setReportLocationMode('coordinates');
+          setReportStatus('제보가 접수되었습니다. 검토 후 게임 문제로 등록됩니다.', 'success');
           playSound('success');
         } catch (error) {
           console.error('Question submission failed', error);
@@ -2082,6 +2305,15 @@
       $('start-share-btn').addEventListener('click', () => shareGame(false));
       $('report-question-btn').addEventListener('click', openReportModal);
       $('report-close-btn').addEventListener('click', closeReportModal);
+      $('report-location-direct-btn').addEventListener('click', () => setReportLocationMode('coordinates'));
+      $('report-location-map-btn').addEventListener('click', () => setReportLocationMode('map'));
+      $('report-photo-input').addEventListener('change', updateReportPhotoPreview);
+      ['report-latitude-input', 'report-longitude-input'].forEach((id) => {
+        $(id).addEventListener('change', () => {
+          const coordinates = readReportCoordinates();
+          if (coordinates) setReportCoordinates(coordinates.latitude, coordinates.longitude, 'coordinates');
+        });
+      });
       $('report-form').addEventListener('submit', submitQuestionReport);
       $('gameover-share-btn').addEventListener('click', () => shareGame(true));
       $('support-close-btn').addEventListener('click', closeSupportModal);

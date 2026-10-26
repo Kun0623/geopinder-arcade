@@ -44,6 +44,16 @@ node scripts/validate-static-site.mjs
 
 `geopinder_places` 레코드는 적어도 `img`, `hint`, `lat`, `lng` 필드를 가져야 하며, 한 게임을 위해 5개 이상의 문제가 필요합니다. `geopinder_rankings`는 `initials`, `score`를 사용합니다. 방 생성/조회 및 랭킹 입력을 공개할 경우에는 RLS에서 입력값 형식, 점수 조작, 오래된 방 정리 정책을 별도로 검토하세요.
 
+### 사용자 문제 제보 접수
+
+문제 제보는 랜드마크 이름·힌트·정확한 좌표·필수 사진을 받습니다. 장소는 위도/경도를 직접 입력하거나 OpenStreetMap 지도에서 클릭해 지정할 수 있으며, 사진은 JPEG·PNG·WebP 형식의 최대 10MB 파일만 허용합니다.
+
+배포 전에 Supabase **SQL Editor**에서 [`supabase/question-submissions.sql`](supabase/question-submissions.sql)을 한 번 실행하세요. 이 SQL은 검토용 `geopinder_question_submissions` 테이블과 게임 이미지와 분리된 비공개 `question-submissions` Storage 버킷을 만듭니다. 익명 방문자는 새 제보와 `pending/` 사진 업로드만 할 수 있으며, 제보 목록과 사진 읽기 권한은 열지 않습니다.
+
+`config.js`의 `questionSubmissionBucket`은 기본값 `question-submissions`을 그대로 사용합니다. 이름을 변경한다면 SQL의 버킷 ID와 같은 이름으로 함께 변경해야 합니다. 버킷이나 RLS 정책이 준비되지 않은 환경에서는 제보 접수가 실패하며, 사진이 포함된 제보를 클립보드만으로 성공 처리하지 않습니다.
+
+운영자는 **Table Editor → `geopinder_question_submissions`**에서 `status = pending` 제보를 검토하고, Supabase Storage의 같은 경로에서 사진을 확인합니다. 승인할 문제는 사진 사용 권리를 확인한 뒤 게임용 Public `question-images` 버킷으로 복사하고, 정확한 `latitude`/`longitude`를 `geopinder_places.lat`/`lng`에 넣어 등록합니다. Wikimedia Commons 사진을 채택했다면 `landmark-commons-attributions.json`에도 해당 게임 문제 ID의 저작자·라이선스·원본 URL을 기록합니다.
+
 ### 문제 이미지 운영
 
 `img`에는 실제로 응답하는 `https://` 이미지 URL을 넣거나, Supabase Storage의 public bucket 경로를 넣습니다. 예를 들어 `https://.../photo.jpg`, `storage://question-images/paris.jpg`, 또는 `question-images/paris.jpg` 형식을 지원합니다. 현재 코드에는 이미지 URL이 404·빈 값일 때 엑박 대신 아케이드 fallback 이미지를 표시하는 방어 로직도 있습니다. 기존 Unsplash 주소가 404가 되면 문제 사진 자체가 복구되는 것은 아니므로, 운영용으로는 Supabase Storage bucket을 Public으로 만들고 `img` 값을 정상 public URL 또는 파일 경로로 교체하는 것이 권장됩니다.
