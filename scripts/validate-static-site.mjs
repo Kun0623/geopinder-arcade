@@ -42,6 +42,7 @@ expect(/<!-- Vercel 환경변수 또는 직접 입력 -->/.test(index), 'Supabas
 expect(/window\.GEOPINDER_CONFIG/.test(index) && /supabaseAnonKey/.test(index), 'Supabase 공개 구성 방어 로직이 없습니다.');
 expect(/<meta name="description"/i.test(index), 'SEO description이 없습니다.');
 expect(/<meta property="og:title"/i.test(index) && /<meta name="twitter:card"/i.test(index), 'OG/Twitter 메타데이터가 없습니다.');
+expect(/property="og:image:type" content="image\/png"/i.test(index) && /name="twitter:image:alt"/i.test(index), '공유 이미지 보조 메타데이터가 없습니다.');
 expect(/<link rel="canonical" href="https:\/\/geopinder-arcade\.vercel\.app\/">/i.test(index), 'Production canonical URL이 없습니다.');
 expect(/property="og:url" content="https:\/\/geopinder-arcade\.vercel\.app\//i.test(index) && /property="og:image" content="https:\/\/geopinder-arcade\.vercel\.app\/og-image\.png"/i.test(index), 'OG 대표 URL·공유 이미지가 없습니다.');
 expect(/application\/ld\+json/.test(index) && /"@type": "VideoGame"/.test(index), 'VideoGame JSON-LD 구조화 데이터가 없습니다.');
@@ -77,7 +78,7 @@ expect(/YOUR_SUPABASE_ANON_KEY/.test(configExample), 'config.example.js에 Anon 
 expect(!/service_role/i.test(index), 'index.html에 금지된 Supabase service role 문자열이 있습니다.');
 expect(!/비밀코드/.test(index), 'index.html에 이전 비밀 문자열이 남아 있습니다.');
 expect(/<urlset\b/i.test(sitemap) && /<loc>https:\/\/geopinder-arcade\.vercel\.app\/<\/loc>/i.test(sitemap), 'sitemap.xml에 Production URL이 없습니다.');
-expect(/User-agent:\s*\*/i.test(robots) && /Allow:\s*\//i.test(robots) && /Sitemap:\s*https:\/\/geopinder-arcade\.vercel\.app\/sitemap\.xml/i.test(robots), 'robots.txt에 절대경로 sitemap이 없습니다.');
+expect(/User-agent:\s*\*/i.test(robots) && /Allow:\s*\//i.test(robots) && /Disallow:\s*\/api\//i.test(robots) && /Sitemap:\s*https:\/\/geopinder-arcade\.vercel\.app\/sitemap\.xml/i.test(robots), 'robots.txt 크롤링 정책이 없습니다.');
 expect(existsSync(resolve(root, 'og-image.png')), '소셜 공유용 OG 이미지가 없습니다.');
 expect(Array.isArray(vercel.headers) && vercel.headers.length > 0, 'vercel.json 보안 헤더가 없습니다.');
 expect(/connect-src[^;]*wss:\/\/\*\.supabase\.co/i.test(cspHeader), 'Supabase Realtime을 위해 CSP connect-src에 wss://*.supabase.co가 필요합니다.');
