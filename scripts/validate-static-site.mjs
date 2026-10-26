@@ -50,6 +50,9 @@ expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없�
 expect(/<meta name="google-adsense-account" content="ca-pub-\d+">/i.test(index), 'Google AdSense Publisher ID 메타 태그가 없습니다.');
 expect(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+" crossorigin="anonymous"><\/script>/i.test(index), 'Google Auto Ads 로더 스크립트가 없습니다.');
 expect(/id="ad-slot"/.test(index) && /function mountAdSenseUnit\(\)/.test(index) && /adsenseAdSlot/.test(index), '게임 종료 후 명시적 AdSense 광고 슬롯 연결이 없습니다.');
+expect(/id="start-share-btn"[^>]*aria-label="GeoPinder 공유하기"/.test(index) && /start-share-icon/.test(index), '시작 모달 우측 상단 공유 아이콘이 없습니다.');
+expect(/id="report-question-btn"[^>]*>문제 제보<\/button>/.test(index) && /id="report-modal"/.test(index), '메인 화면 문제 제보 진입 버튼과 모달이 없습니다.');
+expect(/id="report-form"/.test(index) && /function submitQuestionReport\(/.test(index) && /geopinder_question_submissions/.test(index), '문제 제보 폼 제출 흐름이 없습니다.');
 expect(/id="support-modal"/.test(index) && /id="support-form"/.test(index), 'StepPay 후원 모달과 폼이 없습니다.');
 expect(/id="supporter-name"[^>]*autocomplete="name"/.test(index) && /id="supporter-email"[^>]*type="email"/.test(index), '후원자 이름·이메일 입력 필드가 없습니다.');
 expect(/id="support-consent"[^>]*required/.test(index) && /₩5,000/.test(index), '5,000원 단건 후원 금액 및 필수 고지 동의가 없습니다.');

@@ -346,6 +346,36 @@
     .modal-card--gold { border-color: var(--gold); box-shadow: 10px 10px 0 var(--gold), 0 0 24px rgba(255, 215, 0, 0.4); }
     .modal-card--cyan { border-color: var(--cyan); box-shadow: 10px 10px 0 var(--cyan), 0 0 24px rgba(0, 255, 255, 0.4); }
 
+    .start-card { position: relative; }
+    .start-share-icon {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: grid;
+      width: 44px;
+      height: 44px;
+      margin: 0;
+      padding: 8px;
+      place-items: center;
+      border: 2px solid var(--white);
+      background: #030607;
+      color: var(--white);
+      box-shadow: 3px 3px 0 var(--white);
+      cursor: pointer;
+    }
+    .start-share-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+    .start-share-icon:active { transform: translate(3px, 3px); box-shadow: 0 0 0 transparent; }
+    @media (hover: hover) and (pointer: fine) {
+      .start-share-icon:hover { background: var(--white); color: #000; transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--white), 0 0 14px rgba(255,255,255,.8); }
+    }
+
+    .report-form { display: grid; gap: 12px; text-align: left; }
+    .report-form label { display: grid; gap: 6px; color: var(--white); font-size: 14px; }
+    .report-form textarea { min-height: 92px; resize: vertical; }
+    .report-form .input-field { margin: 0; }
+    .report-status { min-height: 1.4em; margin: 0; color: var(--cyan) !important; font-size: 13px !important; }
+    .report-status[data-tone='error'] { color: var(--pink) !important; }
+
     .modal h1,
     .modal h2,
     .modal h3,
@@ -705,7 +735,10 @@
     </aside>
 
     <div id="start-modal" class="modal is-open" role="presentation">
-      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="start-title">
+      <section class="modal-card start-card" role="dialog" aria-modal="true" aria-labelledby="start-title">
+        <button id="start-share-btn" class="start-share-icon" type="button" aria-label="GeoPinder 공유하기" title="공유하기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"></path></svg>
+        </button>
         <h1 id="start-title">GeoPinder</h1>
         <p class="modal-subtitle">~ Arcade Edition ~</p>
         <div class="ranking-box">
@@ -723,9 +756,37 @@
           <button id="multi-btn" class="btn btn-blue" type="button">2P 대결하기</button>
         </div>
         <div class="button-row">
-          <button id="start-share-btn" class="btn btn-white" type="button">공유하기</button>
+          <button id="report-question-btn" class="btn btn-white" type="button">문제 제보</button>
           <button class="btn donate-btn btn-yellow" type="button">개발자 후원</button>
         </div>
+      </section>
+    </div>
+
+    <div id="report-modal" class="modal" role="presentation" aria-hidden="true">
+      <section class="modal-card modal-card--cyan" role="dialog" aria-modal="true" aria-labelledby="report-title" aria-describedby="report-description">
+        <button id="report-close-btn" class="btn support-close" type="button" aria-label="문제 제보 창 닫기">닫기</button>
+        <h2 id="report-title" style="color:var(--cyan)">문제 제보</h2>
+        <p id="report-description" class="modal-subtitle">새로운 랜드마크 문제를 함께 만들어 주세요.</p>
+        <form id="report-form" class="report-form" novalidate>
+          <label for="report-title-input">랜드마크 이름
+            <input id="report-title-input" class="input-field" type="text" maxlength="120" required placeholder="예: 경복궁">
+          </label>
+          <label for="report-hint-input">문제 힌트
+            <textarea id="report-hint-input" class="input-field" maxlength="500" required placeholder="플레이어가 위치를 추측할 수 있는 힌트를 적어 주세요."></textarea>
+          </label>
+          <label for="report-location-input">위치 (도시·국가 또는 위도, 경도)
+            <input id="report-location-input" class="input-field" type="text" maxlength="160" required placeholder="서울, 대한민국 또는 37.5665, 126.9780">
+          </label>
+          <label for="report-image-input">참고 이미지 URL (선택)
+            <input id="report-image-input" class="input-field" type="url" maxlength="500" placeholder="https://..."><span class="visually-hidden">저작권이 확인된 공개 이미지 주소를 입력하세요.</span>
+          </label>
+          <label for="report-contact-input">회신 이메일 (선택)
+            <input id="report-contact-input" class="input-field" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com">
+          </label>
+          <p id="report-status" class="report-status" role="status" aria-live="polite"></p>
+          <button id="report-submit-btn" class="btn btn-blue" type="submit">제보 내용 보내기</button>
+        </form>
+        <p class="support-footnote">이미지는 저작권과 출처를 확인한 자료만 제보해 주세요.</p>
       </section>
     </div>
 
@@ -823,7 +884,8 @@
     window.GEOPINDER_CONFIG = window.GEOPINDER_CONFIG || {
       supabaseUrl: '',
       supabaseAnonKey: '',
-      adsenseAdSlot: ''
+      adsenseAdSlot: '',
+      questionSubmissionUrl: ''
     };
   </script>
 
@@ -854,7 +916,7 @@
       });
       const $ = (id) => document.getElementById(id);
       const escapeMarkup = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-      const modals = ['start-modal', 'support-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
+      const modals = ['start-modal', 'report-modal', 'support-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
 
       function normalizeInitials(value) {
         return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
@@ -1028,6 +1090,75 @@
         const status = $('support-status');
         status.textContent = message;
         status.dataset.tone = tone;
+      }
+
+      function setReportStatus(message = '', tone = 'info') {
+        const status = $('report-status');
+        status.textContent = message;
+        status.dataset.tone = tone;
+      }
+
+      function openReportModal() {
+        $('report-form').reset();
+        setReportStatus('');
+        setBusy($('report-submit-btn'), false, '제보 내용 보내기');
+        showModal('report-modal');
+      }
+
+      function closeReportModal() {
+        showModal('start-modal');
+      }
+
+      async function submitQuestionReport(event) {
+        event.preventDefault();
+        const form = $('report-form');
+        if (!form.reportValidity()) {
+          setReportStatus('랜드마크 이름, 힌트, 위치를 입력해 주세요.', 'error');
+          return;
+        }
+        const report = {
+          title: $('report-title-input').value.trim(),
+          hint: $('report-hint-input').value.trim(),
+          location: $('report-location-input').value.trim(),
+          image_url: $('report-image-input').value.trim() || null,
+          contact_email: $('report-contact-input').value.trim() || null,
+          source: 'geopinder-arcade',
+          created_at: new Date().toISOString()
+        };
+        const button = $('report-submit-btn');
+        setBusy(button, true, '전송 중...');
+        setReportStatus('제보 내용을 안전하게 전달하는 중입니다.');
+        try {
+          const reportUrl = typeof config.questionSubmissionUrl === 'string' ? config.questionSubmissionUrl.trim() : '';
+          if (reportUrl) {
+            const url = new URL(reportUrl, window.location.origin);
+            url.searchParams.set('title', report.title);
+            url.searchParams.set('hint', report.hint);
+            url.searchParams.set('location', report.location);
+            window.open(url.toString(), '_blank', 'noopener,noreferrer');
+            setReportStatus('제보 양식을 새 창에서 열었습니다. 내용을 확인해 제출해 주세요.');
+          } else if (supabaseClient) {
+            const { error } = await supabaseClient.from('geopinder_question_submissions').insert([report]);
+            if (error) {
+              const body = [`랜드마크: ${report.title}`, `힌트: ${report.hint}`, `위치: ${report.location}`, `이미지 URL: ${report.image_url || '(없음)'}`, `회신 이메일: ${report.contact_email || '(없음)'}`].join('\n');
+              await navigator.clipboard?.writeText(body);
+              setReportStatus('온라인 접수 준비 중입니다. 제보 내용을 클립보드에 복사했습니다.', 'error');
+            } else {
+              setReportStatus('제보가 접수되었습니다. 감사합니다!');
+              form.reset();
+            }
+          } else {
+            const body = [`랜드마크: ${report.title}`, `힌트: ${report.hint}`, `위치: ${report.location}`, `이미지 URL: ${report.image_url || '(없음)'}`, `회신 이메일: ${report.contact_email || '(없음)'}`].join('\n');
+            await navigator.clipboard?.writeText(body);
+            setReportStatus('제보 내용이 클립보드에 복사되었습니다. 운영자에게 전달해 주세요.');
+          }
+          playSound('success');
+        } catch (error) {
+          console.error('Question submission failed', error);
+          setReportStatus('제보 전송에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+        } finally {
+          setBusy(button, false, '제보 내용 보내기');
+        }
       }
 
       function openSupportModal() {
@@ -1949,6 +2080,9 @@
       $('save-rank-btn').addEventListener('click', saveRanking);
       $('rematch-btn').addEventListener('click', requestRematch);
       $('start-share-btn').addEventListener('click', () => shareGame(false));
+      $('report-question-btn').addEventListener('click', openReportModal);
+      $('report-close-btn').addEventListener('click', closeReportModal);
+      $('report-form').addEventListener('submit', submitQuestionReport);
       $('gameover-share-btn').addEventListener('click', () => shareGame(true));
       $('support-close-btn').addEventListener('click', closeSupportModal);
       $('support-form').addEventListener('submit', beginSupportCheckout);

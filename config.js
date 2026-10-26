@@ -8,5 +8,7 @@ window.GEOPINDER_CONFIG = {
   supabaseUrl: 'https://nkxpjjaqytbihqjofwhc.supabase.co',
   supabaseAnonKey: 'sb_publishable_-ipoeqw8_LszSLSsHGX2qA_j3GeCM4U',
   // AdSense 광고 단위 생성 후 숫자 슬롯 ID를 입력하면 게임 종료 광고 영역에 표시됩니다.
-  adsenseAdSlot: '7001318690'
+  adsenseAdSlot: '7001318690',
+  // 선택: 외부 제보 폼 URL을 입력하면 문제 제보 시 새 창으로 엽니다.
+  questionSubmissionUrl: ''
 };
