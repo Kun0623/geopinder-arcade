@@ -95,10 +95,12 @@ expect(/const INITIALS_STORAGE_KEY\s*=\s*['"]geopinder\.playerInitials\.v1['"]/.
 expect(/function restoreSavedInitials\(\)/.test(index) && /function rememberInitials\(initials\)/.test(index), '이니셜 저장·복원 함수가 필요합니다.');
 expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInitials\(\)/.test(index), '성공한 랭킹 등록 뒤 저장하고 페이지 초기화 시 이니셜을 복원해야 합니다.');
 expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
+expect(/GAMEPLAY_MIN_DISTANCE_RATIO\s*=\s*1\.(?:1[5-9]|[2-9]\d)/.test(index), '지구본 과도한 확대를 막는 안전한 최소 카메라 거리가 필요합니다.');
 expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
 expect(/GLOBE_TEXTURE_8K_URL\s*=\s*['"][^'"]*8192|GLOBE_TEXTURE_4K_URL\s*=\s*['"][^'"]*4k/i.test(index), '확대 시 깨짐을 줄이는 8K·4K 지구본 텍스처가 필요합니다.');
 expect(/renderer\(\)[\s\S]*?setPixelRatio\([\s\S]*?devicePixelRatio/.test(index) && /maxTextureSize[\s\S]*?globeTextureUrl/.test(index), '기기별 WebGL 텍스처 한도와 디바이스 픽셀비율을 반영해야 합니다.');
 expect(/function getQuestionImageUrl\(question\)/.test(index) && /function setQuestionImage\(question\)/.test(index) && /image\.onerror/.test(index), 'Supabase 문제 이미지 URL 정규화와 404 fallback이 필요합니다.');
+expect(/storagePath\.startsWith\(configuredPrefix\)/.test(index) && /image\.classList\.add\('is-loading'\)/.test(index) && /image\.onload/.test(index), 'Supabase Storage 경로 중복과 깨진 이미지 아이콘 노출을 방어해야 합니다.');
 expect(/image-rendering:\s*auto/.test(index), '사진 문제 이미지는 pixelated 렌더링을 사용하면 안 됩니다.');
 expect(/function requestArcadeFullscreen\(\)/.test(index) && /requestFullscreen\(\{ navigationUI: 'hide' \}\)/.test(index) && /requestArcadeFullscreen\(\);/.test(index), '게임 시작 시 사용자 제스처 기반 전체화면 요청과 안전한 폴백이 필요합니다.');
 expect(!/requestArcadeFullscreen\(\)/.test(beginMultiplayerBody) && /event: 'guest_joined'[\s\S]*?requestArcadeFullscreen\(\)/.test(index) && /event: 'game_start'[\s\S]*?requestArcadeFullscreen\(\)/.test(index), '2P 전체화면은 버튼 클릭 직후가 아니라 상대 접속 후 게임 시작 이벤트에서 요청해야 합니다.');

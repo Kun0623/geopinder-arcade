@@ -220,6 +220,7 @@
       background: #172326;
       image-rendering: auto;
     }
+    #quiz-img.is-loading { visibility: hidden; }
 
     #quiz-hint {
       min-height: 2.9em;
@@ -828,7 +829,8 @@
       const TOTAL_ROUNDS = 5;
       const INITIALS_STORAGE_KEY = 'geopinder.playerInitials.v1';
       const GAMEPLAY_START_ALTITUDE = 1.35;
-      const GAMEPLAY_MIN_DISTANCE_RATIO = 1.04;
+      // 8K 텍스처를 화면 픽셀보다 과도하게 확대하지 않도록 최소 카메라 거리를 제한합니다.
+      const GAMEPLAY_MIN_DISTANCE_RATIO = 1.18;
       const GLOBE_TEXTURE_8K_URL = 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Nasa_land_ocean_ice_8192.jpg';
       const GLOBE_TEXTURE_4K_URL = 'https://cdn.jsdelivr.net/gh/turban/webgl-earth@master/images/2_no_clouds_4k.jpg';
       const GLOBE_BUMP_URL = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
@@ -1128,13 +1130,16 @@
         if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
 
         // Supabase Storage 경로를 `bucket/path/to/file.jpg` 또는 `storage://bucket/path/to/file.jpg`로도 지원합니다.
-        const storagePath = raw.replace(/^storage:\/\//i, '');
+        const storagePath = raw.replace(/^storage:\/\//i, '').replace(/^\/+/, '');
         const [bucket, ...pathParts] = storagePath.split('/');
         const configuredBucket = typeof question?.image_bucket === 'string'
           ? question.image_bucket.trim()
           : (typeof config.supabaseImageBucket === 'string' ? config.supabaseImageBucket.trim() : '');
         const resolvedBucket = configuredBucket || bucket;
-        const resolvedPath = configuredBucket ? storagePath : pathParts.join('/');
+        const configuredPrefix = configuredBucket ? `${configuredBucket}/` : '';
+        const resolvedPath = configuredBucket
+          ? (storagePath.startsWith(configuredPrefix) ? storagePath.slice(configuredPrefix.length) : storagePath)
+          : pathParts.join('/');
         if (supabaseUrl && resolvedBucket && resolvedPath) {
           return `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(resolvedBucket)}/${resolvedPath.split('/').map(encodeURIComponent).join('/')}`;
         }
@@ -1147,6 +1152,10 @@
         const fallback = createDemoArtwork('IMAGE UNAVAILABLE', '#ff3366');
         image.dataset.fallbackApplied = 'false';
         image.alt = `${hint} 문제 이미지`;
+        image.loading = 'eager';
+        image.decoding = 'async';
+        image.classList.add('is-loading');
+        image.onload = () => image.classList.remove('is-loading');
         image.onerror = () => {
           if (image.dataset.fallbackApplied === 'true') return;
           image.dataset.fallbackApplied = 'true';
