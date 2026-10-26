@@ -46,6 +46,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
   <script src="https://unpkg.com/globe.gl"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@1.530/neodgm/style.css">
@@ -828,7 +829,8 @@
       const INITIALS_STORAGE_KEY = 'geopinder.playerInitials.v1';
       const GAMEPLAY_START_ALTITUDE = 1.35;
       const GAMEPLAY_MIN_DISTANCE_RATIO = 1.04;
-      const GLOBE_TEXTURE_URL = 'https://cdn.jsdelivr.net/gh/turban/webgl-earth@master/images/2_no_clouds_4k.jpg';
+      const GLOBE_TEXTURE_8K_URL = 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Nasa_land_ocean_ice_8192.jpg';
+      const GLOBE_TEXTURE_4K_URL = 'https://cdn.jsdelivr.net/gh/turban/webgl-earth@master/images/2_no_clouds_4k.jpg';
       const GLOBE_BUMP_URL = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
       const ROUND_SECONDS_BY_DIFFICULTY = Object.freeze({
         easy: null,
@@ -1270,7 +1272,6 @@
           return;
         }
         myGlobe = Globe()($('globeViz'))
-          .globeImageUrl(GLOBE_TEXTURE_URL)
           .bumpImageUrl(GLOBE_BUMP_URL)
           .polygonAltitude(0.01)
           .polygonCapColor(() => 'rgba(0,0,0,0)')
@@ -1316,6 +1317,10 @@
 
         const renderer = myGlobe.renderer();
         if (renderer?.setPixelRatio) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        const maxTextureSize = renderer?.capabilities?.maxTextureSize || 4096;
+        const globeTextureUrl = maxTextureSize >= 8192 ? GLOBE_TEXTURE_8K_URL : GLOBE_TEXTURE_4K_URL;
+        myGlobe.globeImageUrl(globeTextureUrl);
+        window.__geopinderGlobeTextureInfo = { maxTextureSize, globeTextureUrl };
         myGlobe.controls().autoRotate = true;
         myGlobe.controls().autoRotateSpeed = 1;
         myGlobe.controls().minDistance = 200;

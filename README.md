@@ -48,7 +48,7 @@ node scripts/validate-static-site.mjs
 
 `img`에는 실제로 응답하는 `https://` 이미지 URL을 넣거나, Supabase Storage의 public bucket 경로를 넣습니다. 예를 들어 `https://.../photo.jpg`, `storage://question-images/paris.jpg`, 또는 `question-images/paris.jpg` 형식을 지원합니다. 현재 코드에는 이미지 URL이 404·빈 값일 때 엑박 대신 아케이드 fallback 이미지를 표시하는 방어 로직도 있습니다. 기존 Unsplash 주소가 404가 되면 문제 사진 자체가 복구되는 것은 아니므로, 운영용으로는 Supabase Storage bucket을 Public으로 만들고 `img` 값을 정상 public URL 또는 파일 경로로 교체하는 것이 권장됩니다.
 
-지구본은 4K 텍스처와 디바이스 픽셀비율을 사용하며, 게임 시작 시 기본 카메라를 더 가까이 배치합니다. 따라서 브라우저 확대 시 기존 저해상도 텍스처가 크게 흐려지는 현상을 줄이면서도 모바일에서는 렌더러 픽셀비율을 최대 2배로 제한해 GPU 부담을 관리합니다.
+지구본은 NASA Blue Marble 기반의 CORS 허용 8K 텍스처(Wikimedia Commons 원본)를 우선 사용하고, WebGL `MAX_TEXTURE_SIZE`가 8K를 지원하지 않는 기기에서는 4K 텍스처로 자동 전환합니다. 게임 시작 시 기본 카메라도 더 가까이 배치하며, 모바일에서는 렌더러 픽셀비율을 최대 2배로 제한해 GPU 부담을 관리합니다. 텍스처 출처: [Wikimedia Commons - NASA land ocean ice 8192](https://commons.wikimedia.org/wiki/File:Nasa_land_ocean_ice_8192.jpg).
 
 > 순수 정적 Vercel 배포는 런타임 환경변수를 브라우저 JavaScript에 자동 주입하지 않습니다. Vercel의 환경변수만으로 Supabase 값을 클라이언트에 제공하려면 작은 빌드 주입 단계 또는 Serverless Function이 필요하며, 이는 ‘무빌드 정적 배포’ 제약과 양립하지 않습니다. 이 프로젝트는 값이 비어 있는 `config.js`로 안전하게 시작합니다. Anon Key는 공개 클라이언트 식별자이므로 RLS가 실제 보안 경계입니다.
 
