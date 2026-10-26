@@ -49,6 +49,7 @@ expect(/application\/ld\+json/.test(index) && /"@type": "VideoGame"/.test(index)
 expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없습니다.');
 expect(/<meta name="google-adsense-account" content="ca-pub-\d+">/i.test(index), 'Google AdSense Publisher ID 메타 태그가 없습니다.');
 expect(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+" crossorigin="anonymous"><\/script>/i.test(index), 'Google Auto Ads 로더 스크립트가 없습니다.');
+expect(/id="ad-slot"/.test(index) && /function mountAdSenseUnit\(\)/.test(index) && /adsenseAdSlot/.test(index), '게임 종료 후 명시적 AdSense 광고 슬롯 연결이 없습니다.');
 expect(/id="support-modal"/.test(index) && /id="support-form"/.test(index), 'StepPay 후원 모달과 폼이 없습니다.');
 expect(/id="supporter-name"[^>]*autocomplete="name"/.test(index) && /id="supporter-email"[^>]*type="email"/.test(index), '후원자 이름·이메일 입력 필드가 없습니다.');
 expect(/id="support-consent"[^>]*required/.test(index) && /₩5,000/.test(index), '5,000원 단건 후원 금액 및 필수 고지 동의가 없습니다.');
@@ -95,7 +96,7 @@ expect(/const INITIALS_STORAGE_KEY\s*=\s*['"]geopinder\.playerInitials\.v1['"]/.
 expect(/function restoreSavedInitials\(\)/.test(index) && /function rememberInitials\(initials\)/.test(index), '이니셜 저장·복원 함수가 필요합니다.');
 expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInitials\(\)/.test(index), '성공한 랭킹 등록 뒤 저장하고 페이지 초기화 시 이니셜을 복원해야 합니다.');
 expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
-expect(/GAMEPLAY_MIN_DISTANCE_RATIO\s*=\s*1\.(?:1[5-9]|[2-9]\d)/.test(index), '지구본 과도한 확대를 막는 안전한 최소 카메라 거리가 필요합니다.');
+expect(/GAMEPLAY_MIN_DISTANCE_RATIO\s*=\s*1\.(?:[2-9]\d|7\d)/.test(index), '지구본 과도한 확대를 막는 안전한 최소 카메라 거리가 필요합니다.');
 expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
 expect(/GLOBE_TEXTURE_8K_URL\s*=\s*['"][^'"]*8192|GLOBE_TEXTURE_4K_URL\s*=\s*['"][^'"]*4k/i.test(index), '확대 시 깨짐을 줄이는 8K·4K 지구본 텍스처가 필요합니다.');
 expect(/renderer\(\)[\s\S]*?setPixelRatio\([\s\S]*?devicePixelRatio/.test(index) && /maxTextureSize[\s\S]*?globeTextureUrl/.test(index), '기기별 WebGL 텍스처 한도와 디바이스 픽셀비율을 반영해야 합니다.');

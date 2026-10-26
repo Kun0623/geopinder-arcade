@@ -11,6 +11,8 @@
 window.GEOPINDER_CONFIG = {
   supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
   supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
+  // AdSense에서 만든 반응형 디스플레이 광고 단위의 숫자 슬롯 ID
+  adsenseAdSlot: 'YOUR_ADSENSE_AD_SLOT_ID',
   // 선택값: img 컬럼에 `파일명.jpg` 또는 `폴더/파일명.jpg`만 저장할 때 사용
   supabaseImageBucket: 'question-images'
 };
