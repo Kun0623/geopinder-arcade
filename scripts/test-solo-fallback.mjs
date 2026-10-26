@@ -183,6 +183,18 @@ try {
     throw new Error(`${error.message} | diagnostics=${JSON.stringify(diagnostics)}`);
   }
 
+  await waitFor('question image or fallback image', async () => evaluate(client, `(() => {
+    const image = document.getElementById('quiz-img');
+    return Boolean(image?.complete && image.naturalWidth > 0);
+  })()`));
+  const imageState = await evaluate(client, `(() => {
+    const image = document.getElementById('quiz-img');
+    return { naturalWidth: image.naturalWidth, fallbackApplied: image.dataset.fallbackApplied === 'true', src: image.currentSrc || image.src };
+  })()`);
+  if (imageState.naturalWidth <= 0) {
+    throw new Error(`Question image did not render: ${JSON.stringify(imageState)}`);
+  }
+
   const timerState = await evaluate(client, `(() => {
     const timer = document.getElementById('hud-timer');
     return {

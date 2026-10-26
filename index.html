@@ -217,7 +217,7 @@
       object-fit: cover;
       object-position: center;
       background: #172326;
-      image-rendering: pixelated;
+      image-rendering: auto;
     }
 
     #quiz-hint {
@@ -867,8 +867,10 @@
 
       const TOTAL_ROUNDS = 5;
       const INITIALS_STORAGE_KEY = 'geopinder.playerInitials.v1';
-      const GAMEPLAY_START_ALTITUDE = 1.8;
-      const GAMEPLAY_MIN_DISTANCE_RATIO = 1.1;
+      const GAMEPLAY_START_ALTITUDE = 1.35;
+      const GAMEPLAY_MIN_DISTANCE_RATIO = 1.04;
+      const GLOBE_TEXTURE_URL = 'https://cdn.jsdelivr.net/gh/turban/webgl-earth@master/images/2_no_clouds_4k.jpg';
+      const GLOBE_BUMP_URL = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
       const ROUND_SECONDS_BY_DIFFICULTY = Object.freeze({
         easy: null,
         normal: 20,
@@ -1225,6 +1227,42 @@
         return data;
       }
 
+      function getQuestionImageUrl(question) {
+        const rawValue = question?.img ?? question?.image_url ?? question?.imageUrl ?? question?.photo_url ?? question?.photo;
+        const raw = typeof rawValue === 'string' ? rawValue.trim() : '';
+        if (!raw) return '';
+        if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+
+        // Supabase Storage 경로를 `bucket/path/to/file.jpg` 또는 `storage://bucket/path/to/file.jpg`로도 지원합니다.
+        const storagePath = raw.replace(/^storage:\/\//i, '');
+        const [bucket, ...pathParts] = storagePath.split('/');
+        const configuredBucket = typeof question?.image_bucket === 'string'
+          ? question.image_bucket.trim()
+          : (typeof config.supabaseImageBucket === 'string' ? config.supabaseImageBucket.trim() : '');
+        const resolvedBucket = configuredBucket || bucket;
+        const resolvedPath = configuredBucket ? storagePath : pathParts.join('/');
+        if (supabaseUrl && resolvedBucket && resolvedPath) {
+          return `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(resolvedBucket)}/${resolvedPath.split('/').map(encodeURIComponent).join('/')}`;
+        }
+        return raw;
+      }
+
+      function setQuestionImage(question) {
+        const image = $('quiz-img');
+        const hint = question?.hint || '문제 랜드마크 이미지';
+        const fallback = createDemoArtwork('IMAGE UNAVAILABLE', '#ff3366');
+        image.dataset.fallbackApplied = 'false';
+        image.alt = `${hint} 문제 이미지`;
+        image.onerror = () => {
+          if (image.dataset.fallbackApplied === 'true') return;
+          image.dataset.fallbackApplied = 'true';
+          image.src = fallback;
+          image.alt = `${hint} 문제 이미지 (대체 이미지)`;
+          showToast('문제 사진을 불러오지 못해 대체 이미지를 표시합니다.', 'error');
+        };
+        image.src = getQuestionImageUrl(question) || fallback;
+      }
+
       function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i -= 1) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -1340,8 +1378,8 @@
           return;
         }
         myGlobe = Globe()($('globeViz'))
-          .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-          .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+          .globeImageUrl(GLOBE_TEXTURE_URL)
+          .bumpImageUrl(GLOBE_BUMP_URL)
           .polygonAltitude(0.01)
           .polygonCapColor(() => 'rgba(0,0,0,0)')
           .polygonSideColor(() => 'rgba(0,0,0,0)')
@@ -1385,12 +1423,17 @@
           myGlobe.polygonsData(geoData);
         });
 
+        const renderer = myGlobe.renderer();
+        if (renderer?.setPixelRatio) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         myGlobe.controls().autoRotate = true;
         myGlobe.controls().autoRotateSpeed = 1;
         myGlobe.controls().minDistance = 200;
         myGlobe.controls().maxDistance = 400;
         myGlobe.controls().addEventListener('start', () => { myGlobe.controls().autoRotate = false; });
-        window.addEventListener('resize', () => myGlobe.width(window.innerWidth).height(window.innerHeight));
+        window.addEventListener('resize', () => {
+          myGlobe.width(window.innerWidth).height(window.innerHeight);
+          if (renderer?.setPixelRatio) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        });
       }
 
       function focusGameplayGlobe() {
@@ -1431,8 +1474,7 @@
           showToast('문제 데이터를 찾을 수 없습니다.', 'error');
           return;
         }
-        $('quiz-img').src = question.img || '';
-        $('quiz-img').alt = question.hint ? `${question.hint} 문제 이미지` : '문제 랜드마크 이미지';
+        setQuestionImage(question);
         $('quiz-hint').textContent = `“${question.hint || '힌트가 없습니다.'}”`;
         $('submit-btn').disabled = true;
         $('submit-btn').textContent = '여기가 확실해!';

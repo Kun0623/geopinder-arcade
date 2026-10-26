@@ -10,5 +10,7 @@
  */
 window.GEOPINDER_CONFIG = {
   supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
-  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY'
+  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
+  // 선택값: img 컬럼에 `파일명.jpg` 또는 `폴더/파일명.jpg`만 저장할 때 사용
+  supabaseImageBucket: 'question-images'
 };
