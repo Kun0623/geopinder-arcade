@@ -1348,6 +1348,7 @@
         const report = {
           title: $('report-title-input').value.trim(),
           hint: $('report-hint-input').value.trim(),
+          location: `${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`,
           latitude: coordinates.latitude,
           longitude: coordinates.longitude,
           location_method: reportLocationMode,

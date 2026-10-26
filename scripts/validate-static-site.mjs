@@ -59,6 +59,7 @@ expect(/id="report-latitude-input"[^>]*type="number"[^>]*min="-90"[^>]*max="90"/
 expect(/id="report-map"/.test(index) && /window\.L\.map\(/.test(index) && /tile\.openstreetmap\.org/.test(index), '문제 제보 지도 핀 선택 기능이 없습니다.');
 expect(/Boolean\(latitudeValue\) && Boolean\(longitudeValue\)/.test(index), '빈 좌표는 0도 위치로 해석하지 않아야 합니다.');
 expect(/id="report-photo-input"[^>]*type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"[^>]*required/.test(index) && /REPORT_PHOTO_MAX_BYTES\s*=\s*10 \* 1024 \* 1024/.test(index), '문제 제보에 10MB 이하 필수 사진 업로드가 없습니다.');
+expect(/location:\s*`\$\{coordinates\.latitude\.toFixed\(6\)\}, \$\{coordinates\.longitude\.toFixed\(6\)\}`/.test(index), '기존 제보 테이블의 필수 location 컬럼 호환 필드가 없습니다.');
 expect(!/id="report-image-input"/.test(index) && !/questionSubmissionUrl/.test(index), '기존 선택 이미지 URL·외부 폼 제보 방식이 남아 있습니다.');
 expect(/function uploadSubmissionPhoto\(file\)/.test(index) && /storage\.from\(bucket\)\.upload\(path, file/.test(index) && /questionSubmissionBucket/.test(index), '제보 사진의 Supabase Storage 업로드 흐름이 없습니다.');
 expect(existsSync(resolve(root, 'supabase/question-submissions.sql')) && /create table if not exists public\.geopinder_question_submissions/i.test(questionSubmissionSql) && /'question-submissions'/.test(questionSubmissionSql), '제보 테이블·비공개 Storage 버킷 SQL이 없습니다.');
