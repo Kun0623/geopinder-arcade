@@ -15,6 +15,8 @@ window.GEOPINDER_CONFIG = {
   adsenseAdSlot: 'YOUR_ADSENSE_AD_SLOT_ID',
   // 문제 제보 사진을 비공개로 보관할 Supabase Storage 버킷
   questionSubmissionBucket: 'question-submissions',
+  // Google Analytics 4 웹 스트림 측정 ID
+  analyticsMeasurementId: 'G-QPH01GBB16',
   // 선택값: img 컬럼에 `파일명.jpg` 또는 `폴더/파일명.jpg`만 저장할 때 사용
   supabaseImageBucket: 'question-images'
 };
