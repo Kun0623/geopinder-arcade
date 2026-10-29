@@ -60,6 +60,7 @@ expect(existsSync(resolve(root, 'supabase/migrations/20261030010000_ranking_coun
 expect(/TOP 100/.test(index) && /max-height: min\(52dvh, 520px\)/.test(index), '랭킹 100위 내부 스크롤 UI가 없습니다.');
 expect(/function countryCodeToFlag\(countryCode\)/.test(index) && /fromCodePoint\(127397/.test(index) && /countryCodeToName/.test(index), '국가 코드·플래그 변환 헬퍼가 없습니다.');
 expect(/\.from\('geopinder_rankings'\)\.select\('initials, score, country_code'\)[\s\S]*?\.limit\(100\)/.test(index), '랭킹 조회가 country_code 포함 상위 100건이 아닙니다.');
+expect(/select\('initials, score'\)[\s\S]*?\.limit\(100\)/.test(index) && /country_code\|column/.test(index), '랭킹 country_code 컬럼 미적용 환경 fallback이 없습니다.');
 expect(/getViewerCountryCode\(\)/.test(index) && /country_code: countryCode/.test(index) && /insert\(\[\{ initials, score: totalScore \}\]\)/.test(index), '랭킹 저장에 국가 코드와 구형 스키마 fallback이 없습니다.');
 expect(/id="report-form"/.test(index) && /function submitQuestionReport\(/.test(index) && /geopinder_question_submissions/.test(index), '문제 제보 폼 제출 흐름이 없습니다.');
 expect(/id="report-location-direct-btn"[^>]*aria-pressed="true"/.test(index) && /id="report-location-map-btn"[^>]*aria-pressed="false"/.test(index), '문제 제보에 직접 좌표·지도 선택 방식이 모두 없습니다.');

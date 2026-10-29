@@ -2276,7 +2276,10 @@
           rankContainer.textContent = 'Supabase를 설정하면 글로벌 랭킹이 표시됩니다.';
           return;
         }
-        const { data, error } = await supabaseClient.from('geopinder_rankings').select('initials, score, country_code').order('score', { ascending: false }).limit(100);
+        let { data, error } = await supabaseClient.from('geopinder_rankings').select('initials, score, country_code').order('score', { ascending: false }).limit(100);
+        if (error && /country_code|column/i.test(String(error.message || ''))) {
+          ({ data, error } = await supabaseClient.from('geopinder_rankings').select('initials, score').order('score', { ascending: false }).limit(100));
+        }
         if (error) {
           rankContainer.textContent = '랭킹을 불러오지 못했습니다.';
           return;
