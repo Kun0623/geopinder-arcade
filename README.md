@@ -42,7 +42,11 @@ node scripts/validate-static-site.mjs
 3. 실제 Anon Key를 포함한 `config.js`는 브라우저에서 공개되므로, Supabase의 `service_role` 키 또는 데이터베이스 비밀번호는 절대 브라우저 코드에 넣지 마세요.
 4. Supabase에서 `geopinder_places`, `geopinder_rooms`, `geopinder_rankings` 테이블과 Realtime broadcast를 준비하고, 익명 사용자의 접근 범위에 맞는 RLS 정책을 설정합니다.
 
-`geopinder_places` 레코드는 적어도 `img`, `hint`, `lat`, `lng` 필드를 가져야 하며, 한 게임을 위해 5개 이상의 문제가 필요합니다. `geopinder_rankings`는 `initials`, `score`를 사용합니다. 방 생성/조회 및 랭킹 입력을 공개할 경우에는 RLS에서 입력값 형식, 점수 조작, 오래된 방 정리 정책을 별도로 검토하세요.
+`geopinder_places` 레코드는 적어도 `img`, `hint`, `lat`, `lng` 필드를 가져야 하며, 한 게임을 위해 5개 이상의 문제가 필요합니다. `geopinder_rankings`는 `initials`, `score`와 선택적 `country_code`를 사용합니다. 시작 화면에는 score 기준 상위 100개 기록이 표시되며, `country_code`가 있을 때만 국가 플래그가 함께 표시됩니다. 방 생성/조회 및 랭킹 입력을 공개할 경우에는 RLS에서 입력값 형식, 점수 조작, 오래된 방 정리 정책을 별도로 검토하세요.
+
+### 랭킹 국가 플래그
+
+국가 코드는 브라우저가 원 IP를 수집하지 않고 Vercel edge의 IP 기반 `x-vercel-ip-country` 헤더에서 `/api/ranking/country`가 읽어 반환합니다. 저장되는 값은 2자리 ISO 국가 코드뿐이며, 국가 판별이 불가능한 환경에서도 랭킹 등록은 계속됩니다. Supabase CLI 또는 SQL Editor에서 [`supabase/migrations/20261030010000_ranking_country_flags.sql`](supabase/migrations/20261030010000_ranking_country_flags.sql)을 적용하면 국가 코드가 저장되고, 로컬 환경에서는 edge 헤더가 없어 플래그가 생략될 수 있습니다.
 
 ### 사용자 문제 제보 접수
 

@@ -443,15 +443,45 @@
     }
 
     #ranking-list {
-      max-height: min(190px, 24dvh);
+      max-height: min(52dvh, 520px);
       padding: 0 10px;
       overflow-y: auto;
       color: var(--white);
       font-size: clamp(15px, 3.8vw, 18px);
       line-height: 1.65;
+      scrollbar-color: var(--cyan) #111;
     }
 
-    .ranking-row { display: flex; justify-content: space-between; gap: 16px; }
+    .ranking-caption {
+      margin: -2px 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    .ranking-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 30px;
+    }
+    .ranking-identity {
+      display: inline-flex;
+      min-width: 0;
+      gap: 7px;
+      align-items: center;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .ranking-flag {
+      width: 1.35em;
+      flex: 0 0 1.35em;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
+      font-size: 0.9em;
+      text-align: center;
+    }
+    .ranking-score { font-variant-numeric: tabular-nums; white-space: nowrap; }
     .ranking-row--first { color: var(--gold); }
 
     .difficulty-label { margin-bottom: 10px; color: var(--white); font-size: 16px; }
@@ -769,7 +799,8 @@
         <p class="modal-subtitle">~ Arcade Edition ~</p>
         <div class="ranking-box">
           <h2>HALL OF FAME</h2>
-          <div id="ranking-list" aria-live="polite">랭킹을 불러오는 중입니다.</div>
+          <p class="ranking-caption">TOP 100 · 국가별 플래그는 접속 국가 기준</p>
+          <div id="ranking-list" role="list" aria-live="polite">랭킹을 불러오는 중입니다.</div>
         </div>
         <div class="difficulty-label">난이도 선택 (Difficulty)</div>
         <div id="difficulty-select" class="difficulty-select" aria-label="난이도 선택">
@@ -968,6 +999,39 @@
 
       function normalizeInitials(value) {
         return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+      }
+
+      let viewerCountryCodePromise = null;
+
+      function normalizeCountryCode(value) {
+        const code = String(value || '').trim().toUpperCase();
+        return /^[A-Z]{2}$/.test(code) ? code : null;
+      }
+
+      async function getViewerCountryCode() {
+        if (!viewerCountryCodePromise) {
+          viewerCountryCodePromise = fetch('/api/ranking/country', { headers: { Accept: 'application/json' } })
+            .then((response) => response.ok ? response.json() : null)
+            .then((payload) => normalizeCountryCode(payload?.countryCode))
+            .catch(() => null);
+        }
+        return viewerCountryCodePromise;
+      }
+
+      function countryCodeToFlag(countryCode) {
+        const code = normalizeCountryCode(countryCode);
+        if (!code) return '';
+        return [...code].map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0))).join('');
+      }
+
+      function countryCodeToName(countryCode) {
+        const code = normalizeCountryCode(countryCode);
+        if (!code) return '';
+        try {
+          return new Intl.DisplayNames(['ko'], { type: 'region' }).of(code) || code;
+        } catch {
+          return code;
+        }
       }
 
       function restoreSavedInitials() {
@@ -2212,7 +2276,7 @@
           rankContainer.textContent = 'Supabase를 설정하면 글로벌 랭킹이 표시됩니다.';
           return;
         }
-        const { data, error } = await supabaseClient.from('geopinder_rankings').select('*').order('score', { ascending: false }).limit(5);
+        const { data, error } = await supabaseClient.from('geopinder_rankings').select('initials, score, country_code').order('score', { ascending: false }).limit(100);
         if (error) {
           rankContainer.textContent = '랭킹을 불러오지 못했습니다.';
           return;
@@ -2224,11 +2288,29 @@
         rankContainer.replaceChildren(...data.map((row, index) => {
           const item = document.createElement('div');
           item.className = `ranking-row${index === 0 ? ' ranking-row--first' : ''}`;
+          item.setAttribute('role', 'listitem');
+          const rowCountryName = countryCodeToName(row.country_code);
+          item.setAttribute('aria-label', `${index + 1}위 ${String(row.initials || '---').slice(0, 3)}${rowCountryName ? `, ${rowCountryName}` : ''}, ${Number(row.score || 0)}점`);
+          const identity = document.createElement('span');
+          identity.className = 'ranking-identity';
+          const flag = document.createElement('span');
+          flag.className = 'ranking-flag';
+          const flagEmoji = countryCodeToFlag(row.country_code);
+          const countryName = countryCodeToName(row.country_code);
+          flag.textContent = flagEmoji;
+          if (flagEmoji) {
+            flag.title = `${countryName} 국기`;
+            flag.setAttribute('aria-label', `${countryName} 국기`);
+          } else {
+            flag.setAttribute('aria-hidden', 'true');
+          }
           const initials = document.createElement('span');
           initials.textContent = `${index + 1}. ${String(row.initials || '---').slice(0, 3)}`;
+          identity.append(flag, initials);
           const score = document.createElement('span');
+          score.className = 'ranking-score';
           score.textContent = Number(row.score || 0).toString().padStart(5, '0');
-          item.append(initials, score);
+          item.append(identity, score);
           return item;
         }));
       }
@@ -2243,7 +2325,12 @@
         }
         const button = $('save-rank-btn');
         setBusy(button, true, 'SAVING...');
-        const { error } = await supabaseClient.from('geopinder_rankings').insert([{ initials, score: totalScore }]);
+        const countryCode = await getViewerCountryCode();
+        const rankingPayload = { initials, score: totalScore, country_code: countryCode };
+        let { error } = await supabaseClient.from('geopinder_rankings').insert([rankingPayload]);
+        if (error && /country_code|column/i.test(String(error.message || ''))) {
+          ({ error } = await supabaseClient.from('geopinder_rankings').insert([{ initials, score: totalScore }]));
+        }
         if (error) {
           showToast('랭킹 저장에 실패했습니다. 권한을 확인하세요.', 'error');
           setBusy(button, false, '랭킹 등록');
