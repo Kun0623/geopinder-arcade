@@ -306,6 +306,8 @@
       cursor: pointer;
       font-size: clamp(15px, 1.4vw, 20px);
       line-height: 1.15;
+      white-space: normal;
+      overflow-wrap: anywhere;
       text-shadow: 1px 1px 0 var(--shadow);
       transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, color 120ms ease, filter 120ms ease;
     }
@@ -404,6 +406,7 @@
       color: var(--cyan);
       font: 700 11px/1 ui-monospace, monospace;
       letter-spacing: .05em;
+      white-space: nowrap;
       cursor: pointer;
     }
     .language-toggle:hover, .language-toggle:focus-visible {
@@ -1185,7 +1188,7 @@
         document.querySelector('meta[property="og:locale"]')?.setAttribute('content', english ? 'en_US' : 'ko_KR');
         const activeQuestion = currentQuestions?.[currentRound - 1];
         if (activeQuestion && $('quiz-hint')) {
-          const questionHint = english ? (activeQuestion.hintEn || activeQuestion.hint || 'No hint available.') : (activeQuestion.hint || '힌트가 없습니다.');
+          const questionHint = english ? (activeQuestion.hint_en || activeQuestion.hintEn || activeQuestion.hint || 'No hint available.') : (activeQuestion.hint || '힌트가 없습니다.');
           $('quiz-hint').textContent = `“${questionHint}”`;
           if (!$('quiz-panel').classList.contains('hidden')) setQuestionImage(activeQuestion);
         }
@@ -1817,7 +1820,7 @@
       function setQuestionImage(question) {
         const image = $('quiz-img');
         const credit = $('image-credit');
-        const hint = currentLanguage === 'en' ? (question?.hintEn || question?.hint || 'Landmark image for the question') : (question?.hint || '문제 랜드마크 이미지');
+        const hint = currentLanguage === 'en' ? (question?.hint_en || question?.hintEn || question?.hint || 'Landmark image for the question') : (question?.hint || '문제 랜드마크 이미지');
         const fallback = createDemoArtwork('IMAGE UNAVAILABLE', '#ff3366');
         const attribution = landmarkAttributions.get(String(question?.id));
         credit.innerHTML = attribution?.source_url
@@ -2069,7 +2072,7 @@
           return;
         }
         setQuestionImage(question);
-        const questionHint = currentLanguage === 'en' ? (question.hintEn || question.hint || 'No hint available.') : (question.hint || '힌트가 없습니다.');
+        const questionHint = currentLanguage === 'en' ? (question.hint_en || question.hintEn || question.hint || 'No hint available.') : (question.hint || '힌트가 없습니다.');
         $('quiz-hint').textContent = `“${questionHint}”`;
         $('submit-btn').disabled = true;
         $('submit-btn').textContent = '여기가 확실해!';

@@ -42,7 +42,11 @@ node scripts/validate-static-site.mjs
 3. 실제 Anon Key를 포함한 `config.js`는 브라우저에서 공개되므로, Supabase의 `service_role` 키 또는 데이터베이스 비밀번호는 절대 브라우저 코드에 넣지 마세요.
 4. Supabase에서 `geopinder_places`, `geopinder_rooms`, `geopinder_rankings` 테이블과 Realtime broadcast를 준비하고, 익명 사용자의 접근 범위에 맞는 RLS 정책을 설정합니다.
 
-`geopinder_places` 레코드는 적어도 `img`, `hint`, `lat`, `lng` 필드를 가져야 하며, 한 게임을 위해 5개 이상의 문제가 필요합니다. `geopinder_rankings`는 `initials`, `score`와 선택적 `country_code`를 사용합니다. 시작 화면에는 score 기준 상위 100개 기록이 표시되며, `country_code`가 있을 때만 국가 플래그가 함께 표시됩니다. 방 생성/조회 및 랭킹 입력을 공개할 경우에는 RLS에서 입력값 형식, 점수 조작, 오래된 방 정리 정책을 별도로 검토하세요.
+`geopinder_places` 레코드는 적어도 `img`, `hint`, `lat`, `lng` 필드를 가져야 하며, 한 게임을 위해 5개 이상의 문제가 필요합니다. 영어 모드에서 사용할 선택 필드 `hint_en`은 한국어 원문 `hint`를 덮어쓰지 않습니다. `geopinder_rankings`는 `initials`, `score`와 선택적 `country_code`를 사용합니다. 시작 화면에는 score 기준 상위 100개 기록이 표시되며, `country_code`가 있을 때만 국가 플래그가 함께 표시됩니다. 방 생성/조회 및 랭킹 입력을 공개할 경우에는 RLS에서 입력값 형식, 점수 조작, 오래된 방 정리 정책을 별도로 검토하세요.
+
+### 한국어·영어 힌트 운영
+
+`index.html`은 영어 모드에서 `hint_en` → `hint` 순서로 사용하고, 한국어 모드에서는 기존 `hint` 원문을 사용합니다. 기존 100개 랜드마크 힌트에 대한 검토된 영어 번역은 [`supabase/migrations/20261030130500_add_english_landmark_hints.sql`](supabase/migrations/20261030130500_add_english_landmark_hints.sql)에 있습니다. Supabase CLI를 연결한 뒤 `supabase db push`로 적용하거나 SQL Editor에서 파일 내용을 실행하세요. 이 migration은 `hint_en` 컬럼을 추가하고 각 레코드의 영어 값만 업데이트하므로 기존 한국어 힌트와 좌표·이미지는 변경하지 않습니다.
 
 ### 랭킹 국가 플래그
 

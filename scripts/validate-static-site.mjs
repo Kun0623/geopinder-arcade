@@ -55,6 +55,8 @@ expect(/"playMode": "SinglePlayer, MultiPlayer"/.test(index) && /"isAccessibleFo
 expect(/id="language-toggle"/.test(index) && /LANGUAGE_STORAGE_KEY/.test(index) && /function applyLanguage\(language\)/.test(index), '한국어·영어 수동 언어 전환과 선택 기억 기능이 없습니다.');
 expect(/navigator\.language/.test(index) && /new URLSearchParams\(window\.location\.search\)/.test(index) && /new MutationObserver/.test(index), '브라우저 언어 감지와 동적 UI 번역 감시가 없습니다.');
 expect(/hintEn/.test(index) && /No hint available\./.test(index), '영어 데모 문제 힌트 fallback이 없습니다.');
+expect(/hint_en/.test(index) && /hint_en \|\| question\.hintEn/.test(index), 'Supabase hint_en 영어 힌트 컬럼 연결이 없습니다.');
+expect(existsSync(resolve(root, 'supabase/migrations/20261030130500_add_english_landmark_hints.sql')), '영어 랜드마크 힌트 migration 파일이 없습니다.');
 expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없습니다.');
 expect(/<meta name="google-adsense-account" content="ca-pub-\d+">/i.test(index), 'Google AdSense Publisher ID 메타 태그가 없습니다.');
 expect(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+" crossorigin="anonymous"><\/script>/i.test(index), 'Google Auto Ads 로더 스크립트가 없습니다.');
