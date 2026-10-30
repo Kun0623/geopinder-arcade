@@ -7,11 +7,11 @@
   <meta name="application-name" content="GeoPinder Arcade">
   <meta name="author" content="GeoPinder Arcade">
   <meta name="robots" content="index, follow, max-image-preview:large">
-  <meta name="description" content="GeoPinder Arcade는 3D 지구본에서 세계 랜드마크의 위치를 찾아 거리 점수를 겨루는 레트로 아케이드 지리 퀴즈 게임입니다.">
+  <meta name="description" content="GeoPinder Arcade는 3D 지구본에서 세계 랜드마크 위치를 찾고 거리 점수를 겨루는 무료 웹 지리 퀴즈 게임입니다. 1P와 실시간 2P 대결을 지원합니다.">
   <meta name="keywords" content="GeoPinder, 지리 퀴즈, 3D 지구본, 아케이드 게임, 멀티플레이, 세계 랜드마크">
   <meta property="og:type" content="website">
   <meta property="og:title" content="GeoPinder Arcade: 3D 세계 지리 퀴즈 게임">
-  <meta property="og:description" content="3D 지구본에서 세계 랜드마크를 찾고 거리 점수를 겨뤄보세요.">
+  <meta property="og:description" content="무료 3D 세계 지리 퀴즈 게임. 랜드마크를 찾고 친구와 실시간 2P 대결을 즐겨보세요.">
   <meta property="og:url" content="https://geopinder-arcade.vercel.app/">
   <meta property="og:image" content="https://geopinder-arcade.vercel.app/og-image.png">
   <meta property="og:image:alt" content="GeoPinder Arcade 3D 세계 지리 퀴즈 게임">
@@ -22,7 +22,7 @@
   <meta property="og:site_name" content="GeoPinder Arcade">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="GeoPinder Arcade: 3D 세계 지리 퀴즈 게임">
-  <meta name="twitter:description" content="3D 지구본에서 세계 랜드마크를 찾고 거리 점수를 겨뤄보세요.">
+  <meta name="twitter:description" content="무료 3D 세계 지리 퀴즈 게임. 랜드마크를 찾고 친구와 실시간 2P 대결을 즐겨보세요.">
   <meta name="twitter:image" content="https://geopinder-arcade.vercel.app/og-image.png">
   <meta name="twitter:image:alt" content="GeoPinder Arcade 3D 세계 지리 퀴즈 게임">
   <meta name="google-adsense-account" content="ca-pub-7636964134092663">
@@ -46,9 +46,43 @@
       "description": "3D 지구본에서 세계 랜드마크의 위치를 찾고 거리 점수를 겨루는 레트로 아케이드 지리 퀴즈 게임입니다.",
       "genre": ["Geography", "Quiz", "Arcade"],
       "gamePlatform": "Web browser",
+      "operatingSystem": "Any",
+      "playMode": "SinglePlayer, MultiPlayer",
+      "featureList": ["3D interactive globe", "landmark geography quiz", "distance-based scoring", "real-time 2-player match", "difficulty timers"],
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "KRW",
+        "availability": "https://schema.org/InStock",
+        "url": "https://geopinder-arcade.vercel.app/"
+      },
       "applicationCategory": "Game",
       "image": "https://geopinder-arcade.vercel.app/og-image.png",
       "inLanguage": "ko"
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "GeoPinder는 어떻게 플레이하나요?",
+          "acceptedAnswer": {"@type": "Answer", "text": "랜드마크 사진과 힌트를 확인한 뒤 지구본을 돌려 위치를 선택하세요. 정답과의 거리가 짧을수록 더 높은 점수를 받습니다."}
+        },
+        {
+          "@type": "Question",
+          "name": "난이도별 시간 제한이 있나요?",
+          "acceptedAnswer": {"@type": "Answer", "text": "초급은 시간 제한이 없고, 중급은 20초, 고급은 10초 안에 위치를 선택해야 합니다."}
+        },
+        {
+          "@type": "Question",
+          "name": "친구와 함께 플레이할 수 있나요?",
+          "acceptedAnswer": {"@type": "Answer", "text": "2P 대결방을 만든 뒤 초대 링크를 공유하면 실시간으로 같은 문제를 풀며 점수를 비교할 수 있습니다."}
+        }
+      ]
     }
   </script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -358,6 +392,31 @@
     .modal-card--cyan { border-color: var(--cyan); box-shadow: 10px 10px 0 var(--cyan), 0 0 24px rgba(0, 255, 255, 0.4); }
 
     .start-card { position: relative; }
+    .seo-intro {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 2px dashed rgba(0, 255, 255, 0.55);
+      color: var(--white);
+      text-align: left;
+    }
+    .seo-intro h2 {
+      margin: 0 0 8px;
+      color: var(--cyan);
+      font-size: clamp(18px, 4vw, 23px);
+      line-height: 1.2;
+      text-shadow: 0 0 9px rgba(0, 255, 255, 0.5);
+    }
+    .seo-intro p {
+      margin: 0 0 12px;
+      color: rgba(247, 255, 249, 0.88);
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .seo-faq { display: grid; gap: 8px; }
+    .seo-faq details { border: 1px solid rgba(51, 255, 102, 0.55); background: rgba(51, 255, 102, 0.045); }
+    .seo-faq summary { padding: 9px 10px; color: var(--green); cursor: pointer; font-size: 14px; line-height: 1.35; }
+    .seo-faq p { margin: 0; padding: 0 10px 10px; color: rgba(247, 255, 249, 0.78); font-size: 12px; }
     .start-share-icon {
       position: absolute;
       top: 14px;
@@ -824,6 +883,24 @@
           <button id="report-question-btn" class="btn btn-white" type="button">문제 제보</button>
           <button class="btn donate-btn btn-yellow" type="button">개발자 후원</button>
         </div>
+        <section class="seo-intro" aria-labelledby="game-intro-title">
+          <h2 id="game-intro-title">3D 세계 지리 퀴즈 게임</h2>
+          <p>GeoPinder Arcade는 사진과 힌트를 보고 3D 지구본에서 세계 랜드마크의 위치를 찾는 무료 웹 게임입니다. 실제 위치와 가까운 곳을 찍을수록 높은 점수를 얻고, 친구와 2P 대결로 정확도를 겨룰 수 있습니다.</p>
+          <div class="seo-faq" aria-label="GeoPinder 게임 안내">
+            <details>
+              <summary>GeoPinder는 어떻게 플레이하나요?</summary>
+              <p>랜드마크 사진과 힌트를 확인한 뒤 지구본을 돌려 위치를 선택하세요. 정답과의 거리가 짧을수록 더 높은 점수를 받습니다.</p>
+            </details>
+            <details>
+              <summary>난이도별 시간 제한이 있나요?</summary>
+              <p>초급은 시간 제한이 없고, 중급은 20초, 고급은 10초 안에 위치를 선택해야 합니다.</p>
+            </details>
+            <details>
+              <summary>친구와 함께 플레이할 수 있나요?</summary>
+              <p>2P 대결방을 만든 뒤 초대 링크를 공유하면 실시간으로 같은 문제를 풀며 점수를 비교할 수 있습니다.</p>
+            </details>
+          </div>
+        </section>
       </section>
     </div>
 

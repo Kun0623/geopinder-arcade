@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GeoPinder Arcade favicon">
+  <rect width="64" height="64" fill="#050505"/>
+  <circle cx="32" cy="32" r="23" fill="#09242a" stroke="#33ff66" stroke-width="4"/>
+  <path d="M9 32h46M32 9c-8 7-8 39 0 46M32 9c8 7 8 39 0 46M14 19c10 4 26 4 36 0M14 45c10-4 26-4 36 0" fill="none" stroke="#00ffff" stroke-width="2"/>
+  <circle cx="42" cy="23" r="5" fill="#ff3366" stroke="#ffd700" stroke-width="2"/>
+</svg>

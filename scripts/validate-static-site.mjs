@@ -49,6 +49,9 @@ expect(/property="og:image:type" content="image\/png"/i.test(index) && /name="tw
 expect(/<link rel="canonical" href="https:\/\/geopinder-arcade\.vercel\.app\/">/i.test(index), 'Production canonical URL이 없습니다.');
 expect(/property="og:url" content="https:\/\/geopinder-arcade\.vercel\.app\//i.test(index) && /property="og:image" content="https:\/\/geopinder-arcade\.vercel\.app\/og-image\.png"/i.test(index), 'OG 대표 URL·공유 이미지가 없습니다.');
 expect(/application\/ld\+json/.test(index) && /"@type": "VideoGame"/.test(index), 'VideoGame JSON-LD 구조화 데이터가 없습니다.');
+expect(/class="seo-intro"/.test(index) && /3D 세계 지리 퀴즈 게임/.test(index) && /실시간 2P 대결/.test(index), '초기 HTML에 검색 가능한 게임 소개 콘텐츠가 없습니다.');
+expect(/"@type": "FAQPage"/.test(index) && /GeoPinder는 어떻게 플레이하나요\?/.test(index) && /난이도별 시간 제한이 있나요\?/.test(index), '화면 FAQ와 연결된 FAQPage JSON-LD가 없습니다.');
+expect(/"playMode": "SinglePlayer, MultiPlayer"/.test(index) && /"isAccessibleForFree": true/.test(index) && /"price": "0"/.test(index), 'VideoGame 무료·싱글·멀티플레이 구조화 데이터가 없습니다.');
 expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없습니다.');
 expect(/<meta name="google-adsense-account" content="ca-pub-\d+">/i.test(index), 'Google AdSense Publisher ID 메타 태그가 없습니다.');
 expect(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+" crossorigin="anonymous"><\/script>/i.test(index), 'Google Auto Ads 로더 스크립트가 없습니다.');
