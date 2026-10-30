@@ -13,6 +13,8 @@ https://geopinder-arcade.vercel.app/
 - [`video-scripts.md`](video-scripts.md): 30초·60초 영상 대본과 촬영 가이드
 - [`content-calendar.csv`](content-calendar.csv): 4주 게시 일정과 측정 지표
 - [`community-promotion-strategy.md`](community-promotion-strategy.md): 커뮤니티별 규칙 기반 홍보 전략과 게시용 카피
+- [`community-post-drafts-2026-10-30.md`](community-post-drafts-2026-10-30.md): 루리웹·인디게임 커뮤니티·Reddit용 개발일지와 소개 초안
+- [`seo-traffic-report-2026-10-30.md`](seo-traffic-report-2026-10-30.md): 최신 Search Console·GA4 확인 결과
 - `../og-image.png`: Open Graph용 1200×630 대표 이미지
 - `../mobile-375x812.png`: 모바일 UI 소개 캡처
 - `../favicon.svg`: 브랜드 아이콘
