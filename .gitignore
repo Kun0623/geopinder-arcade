@@ -15,6 +15,7 @@ mobile-*.png
 # Logs
 *.log
 .landmark-cache/
+supabase/.temp/
 
 # Internal implementation planning artifacts
 docs/superpowers/

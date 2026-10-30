@@ -13,6 +13,7 @@ const vercel = JSON.parse(read('vercel.json'));
 const checkoutApi = existsSync(resolve(root, 'api/steppay/checkout.mjs')) ? read('api/steppay/checkout.mjs') : '';
 const checkoutLib = existsSync(resolve(root, 'lib/steppay-checkout.mjs')) ? read('lib/steppay-checkout.mjs') : '';
 const questionSubmissionSql = existsSync(resolve(root, 'supabase/question-submissions.sql')) ? read('supabase/question-submissions.sql') : '';
+const placesRlsSql = existsSync(resolve(root, 'supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql')) ? read('supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql') : '';
 const rankingCountryApi = existsSync(resolve(root, 'api/ranking/country.mjs')) ? read('api/ranking/country.mjs') : '';
 const rankingCountryMigration = existsSync(resolve(root, 'supabase/migrations/20261030010000_ranking_country_flags.sql')) ? read('supabase/migrations/20261030010000_ranking_country_flags.sql') : '';
 const cspHeader = vercel.headers?.flatMap((rule) => rule.headers || []).find((header) => header.key?.toLowerCase() === 'content-security-policy')?.value || '';
@@ -81,6 +82,9 @@ expect(!/id="report-image-input"/.test(index) && !/questionSubmissionUrl/.test(i
 expect(/function uploadSubmissionPhoto\(file\)/.test(index) && /storage\.from\(bucket\)\.upload\(path, file/.test(index) && /questionSubmissionBucket/.test(index), '제보 사진의 Supabase Storage 업로드 흐름이 없습니다.');
 expect(existsSync(resolve(root, 'supabase/question-submissions.sql')) && /create table if not exists public\.geopinder_question_submissions/i.test(questionSubmissionSql) && /'question-submissions'/.test(questionSubmissionSql), '제보 테이블·비공개 Storage 버킷 SQL이 없습니다.');
 expect(/enable row level security/i.test(questionSubmissionSql) && /Anonymous can create question submissions/.test(questionSubmissionSql) && /Anonymous can upload pending question photos/.test(questionSubmissionSql) && !/for select\s+to anon/i.test(questionSubmissionSql), '제보·사진은 익명 INSERT만 허용하는 RLS 정책이어야 합니다.');
+expect(existsSync(resolve(root, 'supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql')) && /alter table public\.geopinder_places enable row level security/i.test(placesRlsSql), 'geopinder_places RLS 활성화 migration이 없습니다.');
+expect(/revoke all on table public\.geopinder_places from anon, authenticated/i.test(placesRlsSql) && /grant select on table public\.geopinder_places to anon, authenticated/i.test(placesRlsSql), 'geopinder_places 공개 역할은 SELECT만 가져야 합니다.');
+expect(/cmd in \('INSERT', 'UPDATE', 'DELETE', 'ALL'\)/i.test(placesRlsSql) && /Public can read landmark places/.test(placesRlsSql), 'geopinder_places 비공개 쓰기 정책 제거와 공개 읽기 정책이 없습니다.');
 expect(/id="support-modal"/.test(index) && /id="support-form"/.test(index), 'StepPay 후원 모달과 폼이 없습니다.');
 expect(/id="supporter-name"[^>]*autocomplete="name"/.test(index) && /id="supporter-email"[^>]*type="email"/.test(index), '후원자 이름·이메일 입력 필드가 없습니다.');
 expect(/id="support-consent"[^>]*required/.test(index) && /₩5,000/.test(index), '5,000원 단건 후원 금액 및 필수 고지 동의가 없습니다.');

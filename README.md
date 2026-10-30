@@ -48,6 +48,8 @@ node scripts/validate-static-site.mjs
 
 `index.html`은 영어 모드에서 `hint_en` → `hint` 순서로 사용하고, 한국어 모드에서는 기존 `hint` 원문을 사용합니다. 기존 100개 랜드마크 힌트에 대한 검토된 영어 번역은 [`supabase/migrations/20261030130500_add_english_landmark_hints.sql`](supabase/migrations/20261030130500_add_english_landmark_hints.sql)에 있습니다. Supabase CLI를 연결한 뒤 `supabase db push`로 적용하거나 SQL Editor에서 파일 내용을 실행하세요. 이 migration은 `hint_en` 컬럼을 추가하고 각 레코드의 영어 값만 업데이트하므로 기존 한국어 힌트와 좌표·이미지는 변경하지 않습니다.
 
+랜드마크 원본 데이터 보호를 위해 [`supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql`](supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql)도 적용하세요. `geopinder_places`는 RLS를 활성화하고 `anon`·`authenticated` 역할에 `SELECT`만 허용합니다. `INSERT`·`UPDATE`·`DELETE`·`TRUNCATE` 권한과 기존 쓰기 정책은 제거되므로 브라우저 개발자 도구나 공개 REST 요청으로 힌트·좌표·이미지를 임의 변경할 수 없습니다. 운영 수정은 Supabase Studio 또는 서버 측 `service_role` 기반 관리자 도구에서만 수행하세요. `service_role` 키는 브라우저 코드나 공개 환경변수에 넣지 마세요.
+
 ### 랭킹 국가 플래그
 
 국가 코드는 브라우저가 원 IP를 수집하지 않고 Vercel edge의 IP 기반 `x-vercel-ip-country` 헤더에서 `/api/ranking/country`가 읽어 반환합니다. 저장되는 값은 2자리 ISO 국가 코드뿐이며, 국가 판별이 불가능한 환경에서도 랭킹 등록은 계속됩니다. Supabase CLI 또는 SQL Editor에서 [`supabase/migrations/20261030010000_ranking_country_flags.sql`](supabase/migrations/20261030010000_ranking_country_flags.sql)을 적용하면 국가 코드가 저장되고, 로컬 환경에서는 edge 헤더가 없어 플래그가 생략될 수 있습니다.
