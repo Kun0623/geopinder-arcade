@@ -97,6 +97,26 @@ Play link: https://geopinder-arcade.vercel.app/?utm_source=reddit&utm_medium=com
 
 This is a development and UX feedback post rather than a launch advertisement. I’ll share what I learn from the feedback in a follow-up post.
 
+## 초안 D — Reddit r/WebGames 실제 게시용 영어 소개
+
+`r/WebGames`는 게임명으로 시작하는 제목과 회원가입 없는 단일 웹게임 직접 링크를 요구하므로, 아래 글에는 UTM 파라미터나 다른 링크를 넣지 않습니다.
+
+### Title
+
+`GeoPinder Arcade — A free 3D geography quiz on a rotating globe`
+
+### Body
+
+GeoPinder Arcade is a free browser game where you identify world landmarks from an image and a hint, rotate a 3D globe, and place your guess. The closer your guess is to the correct location, the higher your score.
+
+It has three difficulty modes: no timer, 20 seconds, and 10 seconds. You can also create a 2-player room and challenge a friend through an invite link.
+
+No signup or installation required:
+
+https://geopinder-arcade.vercel.app/
+
+Feedback on the globe controls and difficulty balance is welcome.
+
 ## 댓글 대응 초안
 
 **플레이 방법을 묻는 경우**
