@@ -12,6 +12,7 @@ const envExample = read('.env.example');
 const vercel = JSON.parse(read('vercel.json'));
 const checkoutApi = existsSync(resolve(root, 'api/steppay/checkout.mjs')) ? read('api/steppay/checkout.mjs') : '';
 const checkoutLib = existsSync(resolve(root, 'lib/steppay-checkout.mjs')) ? read('lib/steppay-checkout.mjs') : '';
+const visitorCountryApi = existsSync(resolve(root, 'api/visitor/country.mjs')) ? read('api/visitor/country.mjs') : '';
 const questionSubmissionSql = existsSync(resolve(root, 'supabase/question-submissions.sql')) ? read('supabase/question-submissions.sql') : '';
 const placesRlsSql = existsSync(resolve(root, 'supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql')) ? read('supabase/migrations/20261030150000_restrict_geopinder_places_writes.sql') : '';
 const rankingCountryApi = existsSync(resolve(root, 'api/ranking/country.mjs')) ? read('api/ranking/country.mjs') : '';
@@ -89,6 +90,10 @@ expect(/id="support-modal"/.test(index) && /id="support-form"/.test(index), 'Ste
 expect(/id="supporter-name"[^>]*autocomplete="name"/.test(index) && /id="supporter-email"[^>]*type="email"/.test(index), '후원자 이름·이메일 입력 필드가 없습니다.');
 expect(/id="support-consent"[^>]*required/.test(index) && /₩5,000/.test(index), '5,000원 단건 후원 금액 및 필수 고지 동의가 없습니다.');
 expect(/fetch\('\/api\/steppay\/checkout'/.test(index) && /method:\s*'POST'/.test(index), '브라우저 후원 폼이 StepPay checkout endpoint를 POST로 호출하지 않습니다.');
+expect(/buyMeACoffeeUrl/.test(configExample) && /https:\/\/buymeacoffee\.com\/geopinderarcade/.test(configExample), '해외 후원 공개 URL 설정 예시가 없습니다.');
+expect(existsSync(resolve(root, 'api/visitor/country.mjs')) && /x-vercel-ip-country/.test(visitorCountryApi) && /countryCode/.test(visitorCountryApi) && /no-store/.test(visitorCountryApi) && !/request\.socket|x-forwarded-for|client-ip/i.test(visitorCountryApi), '원 IP를 저장하지 않는 방문자 국가 API가 없습니다.');
+expect(/getVisitorCountryCode\(\)/.test(index) && /visitorCountryCode !== 'KR'/.test(index) && /openInternationalSupport\(\)/.test(index) && /buyMeACoffeeUrl/.test(index), '국내 StepPay·해외 Buy Me a Coffee 후원 라우팅이 없습니다.');
+expect(/return 'KR'/.test(index) && /visitorCountryCode !== 'KR'[\s\S]*?openInternationalSupport/.test(index), '국가 감지 실패 시 StepPay 폴백이 없습니다.');
 expect(!/STEPPAY_SECRET_TOKEN/.test(index) && !/Secret-Token/.test(index), 'StepPay 비밀 토큰은 브라우저 HTML에 존재하면 안 됩니다.');
 expect(existsSync(resolve(root, 'api/steppay/checkout.mjs')) && /createCheckoutHandler/.test(checkoutApi), 'Vercel StepPay checkout endpoint가 없습니다.');
 expect(existsSync(resolve(root, 'lib/steppay-checkout.mjs')) && /function createCheckout/.test(checkoutLib), 'StepPay 주문 생성 서버 라이브러리가 없습니다.');

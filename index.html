@@ -1081,6 +1081,7 @@
       const config = window.GEOPINDER_CONFIG || {};
       const supabaseUrl = typeof config.supabaseUrl === 'string' ? config.supabaseUrl.trim() : '';
       const supabaseAnonKey = typeof config.supabaseAnonKey === 'string' ? config.supabaseAnonKey.trim() : '';
+      const buyMeACoffeeUrl = typeof config.buyMeACoffeeUrl === 'string' ? config.buyMeACoffeeUrl.trim() : '';
       const hasSupabaseConfig = /^https:\/\/.+\.supabase\.co\/?$/i.test(supabaseUrl) && supabaseAnonKey.length > 20;
       const supabaseClient = hasSupabaseConfig && window.supabase
         ? window.supabase.createClient(supabaseUrl, supabaseAnonKey)
@@ -1117,7 +1118,8 @@
       ];
       const translationMap = Object.fromEntries(translationPairs.flatMap(([ko, en]) => [[ko, { ko, en }], [en, { ko, en }]]));
       [
-        ['지구본에서 위치를 다시 선택하세요.', 'Choose a location on the globe again.'], ['Supabase URL과 Anon Key를 설정한 뒤 다시 시도하세요.', 'Set the Supabase URL and anon key, then try again.'], ['전송 중...', 'Sending...'], ['사진을 업로드하고 제보 내용을 접수하는 중입니다.', 'Uploading the photo and submitting your question...'], ['제보 접수는 Supabase 연결 설정 후 사용할 수 있습니다.', 'Question submission requires a Supabase connection.'], ['제보가 접수되었습니다. 검토 후 게임 문제로 등록됩니다.', 'Question submitted. It will be reviewed before being added to the game.'], ['제보 전송에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'Question submission failed. Please try again later.'], ['랜드마크 이름, 힌트, 사진을 모두 입력해 주세요.', 'Enter a landmark name, hint, and photo.'], ['장소 좌표를 확인해 주세요.', 'Check the location coordinates.'], ['필수 사진을 확인해 주세요.', 'Check the required photo.'], ['랜드마크 사진을 등록해 주세요.', 'Add a landmark photo.'], ['JPEG, PNG, WebP 사진만 등록할 수 있습니다.', 'Only JPEG, PNG, and WebP photos are accepted.'], ['사진 용량은 최대 10MB입니다.', 'Photos must be 10 MB or smaller.'], ['사진 업로드에 실패했습니다.', 'Photo upload failed.'], ['제보 저장에 실패했습니다.', 'Saving the question failed.'], ['이름, 이메일, 결제 정보 전송 동의를 확인해 주세요.', 'Confirm your name, email, and consent to send payment information.'], ['결제창 준비 중...', 'Preparing checkout...'], ['결제 페이지를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'Could not prepare checkout. Please try again later.'], ['결제창을 새 탭에서 열었습니다. 결제가 끝난 뒤 이 게임 탭으로 돌아오세요.', 'Checkout opened in a new tab. Return to this game tab after payment.'], ['팝업이 차단되어 현재 탭에서 StepPay 결제 페이지로 이동합니다.', 'The popup was blocked, so StepPay checkout will open in this tab.'], ['결제 완료 화면에서 돌아왔습니다. 실제 결제 상태는 StepPay 결제 내역에서 확인하세요.', 'You returned from checkout. Check the StepPay payment history for the final status.'], ['후원 결제를 취소했습니다. 게임은 그대로 이어집니다.', 'The donation was cancelled. The game will continue.'], ['랭킹을 불러오지 못했습니다.', 'Could not load the leaderboard.'], ['Supabase를 설정하면 글로벌 랭킹이 표시됩니다.', 'Configure Supabase to show the global leaderboard.'], ['이니셜은 영문 또는 숫자 3글자로 입력하세요.', 'Enter three letters or numbers for your initials.'], ['랭킹 저장에 실패했습니다. 권한을 확인하세요.', 'Could not save the score. Check permissions.'], ['문제를 불러오지 못했습니다. Supabase 설정을 확인하세요.', 'Could not load questions. Check the Supabase configuration.'], ['문제 데이터를 찾을 수 없습니다.', 'Question data was not found.'], ['3D 지구본을 불러오지 못했습니다. 네트워크를 확인하세요.', 'Could not load the 3D globe. Check your network connection.'], ['국가 경계를 불러오지 못했습니다.', 'Could not load country borders.'], ['문제 사진을 불러오지 못해 대체 이미지를 표시합니다.', 'The question photo could not be loaded, so a fallback image is shown.'], ['지구본을 클릭해 위치를 먼저 선택하세요.', 'Click the globe to choose a location first.'], ['게임 링크가 복사되었습니다.', 'Game link copied.'], ['게임 링크가 복사되었습니다. 친구에게 보내세요.', 'Game link copied. Send it to your friend.'], ['존재하지 않거나 만료된 방입니다.', 'This room does not exist or has expired.'], ['대결방을 만들지 못했습니다. 데이터 권한을 확인하세요.', 'Could not create the battle room. Check data permissions.'], ['멀티플레이 연결에 실패했습니다.', 'Multiplayer connection failed.'], ['나가는 중...', 'Leaving...'], ['친구와의 대결을 준비합니다.', 'Preparing a battle with your friend.'], ['상대방이 위치를 선택하지 않았습니다.', 'Your opponent did not choose a location.'], ['상대방이 정답을 제출했습니다.', 'Your opponent submitted a guess.']
+        ['지구본에서 위치를 다시 선택하세요.', 'Choose a location on the globe again.'], ['Supabase URL과 Anon Key를 설정한 뒤 다시 시도하세요.', 'Set the Supabase URL and anon key, then try again.'], ['전송 중...', 'Sending...'], ['사진을 업로드하고 제보 내용을 접수하는 중입니다.', 'Uploading the photo and submitting your question...'], ['제보 접수는 Supabase 연결 설정 후 사용할 수 있습니다.', 'Question submission requires a Supabase connection.'], ['제보가 접수되었습니다. 검토 후 게임 문제로 등록됩니다.', 'Question submitted. It will be reviewed before being added to the game.'], ['제보 전송에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'Question submission failed. Please try again later.'], ['랜드마크 이름, 힌트, 사진을 모두 입력해 주세요.', 'Enter a landmark name, hint, and photo.'], ['장소 좌표를 확인해 주세요.', 'Check the location coordinates.'], ['필수 사진을 확인해 주세요.', 'Check the required photo.'], ['랜드마크 사진을 등록해 주세요.', 'Add a landmark photo.'], ['JPEG, PNG, WebP 사진만 등록할 수 있습니다.', 'Only JPEG, PNG, and WebP photos are accepted.'], ['사진 용량은 최대 10MB입니다.', 'Photos must be 10 MB or smaller.'], ['사진 업로드에 실패했습니다.', 'Photo upload failed.'], ['제보 저장에 실패했습니다.', 'Saving the question failed.'], ['이름, 이메일, 결제 정보 전송 동의를 확인해 주세요.', 'Confirm your name, email, and consent to send payment information.'], ['결제창 준비 중...', 'Preparing checkout...'], ['결제 페이지를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'Could not prepare checkout. Please try again later.'], ['결제창을 새 탭에서 열었습니다. 결제가 끝난 뒤 이 게임 탭으로 돌아오세요.', 'Checkout opened in a new tab. Return to this game tab after payment.'], ['팝업이 차단되어 현재 탭에서 StepPay 결제 페이지로 이동합니다.', 'The popup was blocked, so StepPay checkout will open in this tab.'], ['결제 완료 화면에서 돌아왔습니다. 실제 결제 상태는 StepPay 결제 내역에서 확인하세요.', 'You returned from checkout. Check the StepPay payment history for the final status.'], ['후원 결제를 취소했습니다. 게임은 그대로 이어집니다.', 'The donation was cancelled. The game will continue.'], ['랭킹을 불러오지 못했습니다.', 'Could not load the leaderboard.'], ['Supabase를 설정하면 글로벌 랭킹이 표시됩니다.', 'Configure Supabase to show the global leaderboard.'], ['이니셜은 영문 또는 숫자 3글자로 입력하세요.', 'Enter three letters or numbers for your initials.'], ['랭킹 저장에 실패했습니다. 권한을 확인하세요.', 'Could not save the score. Check permissions.'], ['문제를 불러오지 못했습니다. Supabase 설정을 확인하세요.', 'Could not load questions. Check the Supabase configuration.'], ['문제 데이터를 찾을 수 없습니다.', 'Question data was not found.'], ['3D 지구본을 불러오지 못했습니다. 네트워크를 확인하세요.', 'Could not load the 3D globe. Check your network connection.'], ['국가 경계를 불러오지 못했습니다.', 'Could not load country borders.'], ['문제 사진을 불러오지 못해 대체 이미지를 표시합니다.', 'The question photo could not be loaded, so a fallback image is shown.'], ['지구본을 클릭해 위치를 먼저 선택하세요.', 'Click the globe to choose a location first.'], ['게임 링크가 복사되었습니다.', 'Game link copied.'], ['게임 링크가 복사되었습니다. 친구에게 보내세요.', 'Game link copied. Send it to your friend.'], ['존재하지 않거나 만료된 방입니다.', 'This room does not exist or has expired.'], ['대결방을 만들지 못했습니다. 데이터 권한을 확인하세요.', 'Could not create the battle room. Check data permissions.'], ['멀티플레이 연결에 실패했습니다.', 'Multiplayer connection failed.'], ['나가는 중...', 'Leaving...'], ['친구와의 대결을 준비합니다.', 'Preparing a battle with your friend.'], ['상대방이 위치를 선택하지 않았습니다.', 'Your opponent did not choose a location.'], ['상대방이 정답을 제출했습니다.', 'Your opponent submitted a guess.'],
+        ['해외 방문자용 후원 페이지를 여는 중입니다.', 'Opening the international support page...'], ['팝업이 차단되어 현재 탭에서 Buy Me a Coffee 후원 페이지로 이동합니다.', 'The popup was blocked, so Buy Me a Coffee will open in this tab.'], ['해외 후원 페이지를 준비하지 못해 StepPay로 계속합니다.', 'The international support page was unavailable, so we will continue with StepPay.']
       ].forEach(([ko, en]) => { translationMap[ko] = { ko, en }; translationMap[en] = { ko, en }; });
       let currentLanguage = 'ko';
       let translatingDom = false;
@@ -1703,16 +1705,57 @@
         try { checkoutWindow.close(); } catch { /* Popup close is best-effort only. */ }
       }
 
+      async function getVisitorCountryCode() {
+        try {
+          const response = await fetch('/api/visitor/country', {
+            headers: { accept: 'application/json' },
+            credentials: 'same-origin',
+            cache: 'no-store'
+          });
+          const data = await response.json().catch(() => ({}));
+          const code = typeof data.countryCode === 'string' ? data.countryCode.trim().toUpperCase() : '';
+          return /^[A-Z]{2}$/.test(code) ? code : 'KR';
+        } catch {
+          return 'KR';
+        }
+      }
+
+      function openInternationalSupport() {
+        let supportUrl;
+        try {
+          const parsed = new URL(buyMeACoffeeUrl);
+          if (parsed.protocol !== 'https:' || parsed.hostname !== 'buymeacoffee.com') return false;
+          supportUrl = parsed.toString();
+        } catch {
+          return false;
+        }
+
+        setSupportStatus('해외 방문자용 후원 페이지를 여는 중입니다.', 'success');
+        const supportWindow = window.open(supportUrl, '_blank', 'noopener,noreferrer');
+        if (supportWindow) {
+          showModal(supportReturnModal);
+          return true;
+        }
+
+        setSupportStatus('팝업이 차단되어 현재 탭에서 Buy Me a Coffee 후원 페이지로 이동합니다.');
+        window.setTimeout(() => window.location.assign(supportUrl), 120);
+        return true;
+      }
+
       async function beginSupportCheckout(event) {
         event.preventDefault();
+        initAudio();
+        playSound('pin');
+
+        const visitorCountryCode = await getVisitorCountryCode();
+        if (visitorCountryCode !== 'KR' && openInternationalSupport()) return;
+
         const form = $('support-form');
         if (!form.reportValidity()) {
           setSupportStatus('이름, 이메일, 결제 정보 전송 동의를 확인해 주세요.', 'error');
           return;
         }
 
-        initAudio();
-        playSound('pin');
         const button = $('support-submit-btn');
         const checkoutWindow = window.open('about:blank', '_blank');
         if (checkoutWindow) {

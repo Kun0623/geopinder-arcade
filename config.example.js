@@ -17,6 +17,8 @@ window.GEOPINDER_CONFIG = {
   questionSubmissionBucket: 'question-submissions',
   // Google Analytics 4 웹 스트림 측정 ID
   analyticsMeasurementId: 'G-QPH01GBB16',
+  // 해외 방문자 후원 페이지. 국내 방문자는 StepPay를 사용합니다.
+  buyMeACoffeeUrl: 'https://buymeacoffee.com/geopinderarcade',
   // 선택값: img 컬럼에 `파일명.jpg` 또는 `폴더/파일명.jpg`만 저장할 때 사용
   supabaseImageBucket: 'question-images'
 };

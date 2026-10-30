@@ -10,5 +10,7 @@ window.GEOPINDER_CONFIG = {
   // AdSense 광고 단위 생성 후 숫자 슬롯 ID를 입력하면 게임 종료 광고 영역에 표시됩니다.
   adsenseAdSlot: '7001318690',
   // 문제 제보 사진을 비공개로 보관할 Supabase Storage 버킷입니다.
-  questionSubmissionBucket: 'question-submissions'
+  questionSubmissionBucket: 'question-submissions',
+  // 해외 방문자를 위한 Buy Me a Coffee 공개 후원 페이지입니다.
+  buyMeACoffeeUrl: 'https://buymeacoffee.com/geopinderarcade'
 };

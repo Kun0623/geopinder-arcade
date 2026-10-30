@@ -82,6 +82,8 @@ node scripts/validate-static-site.mjs
 
 게임의 `개발자 후원` 버튼은 이름·이메일·명시적 동의를 받은 뒤 같은 origin의 `POST /api/steppay/checkout`으로 요청합니다. Vercel Serverless Function은 StepPay 고객과 5,000원 단건 주문을 만들고, StepPay가 반환한 HTTPS 관리형 결제 페이지로만 연결합니다. 카드 정보는 게임 또는 Vercel 함수에서 수집·저장하지 않습니다.
 
+방문자 국가에 따라 후원 경로도 자동으로 나뉩니다. Vercel Edge가 제공하는 `x-vercel-ip-country` 헤더를 `/api/visitor/country`가 읽어 두 글자 국가 코드만 반환하며, 한국(`KR`) 방문자는 기존 StepPay 5,000원 결제 폼으로 이동합니다. 한국 외 방문자는 이름·이메일을 StepPay로 보내지 않고 공개 Buy Me a Coffee 페이지(`https://buymeacoffee.com/geopinderarcade`)를 새 탭으로 엽니다. 국가 감지 실패나 설정 오류는 결제가 누락되지 않도록 StepPay로 안전하게 폴백합니다. 원 IP는 저장하거나 브라우저에 전달하지 않습니다.
+
 Vercel Production 환경변수에 다음 **서버 전용** 값을 등록하세요. 실제 `STEPPAY_SECRET_TOKEN`은 GitHub, `config.js`, `index.html`, 브라우저 콘솔에 절대 넣지 마세요.
 
 ```text
@@ -109,6 +111,7 @@ node scripts/test-steppay-checkout.mjs
 ├── robots.txt / sitemap.xml      # 검색 노출 기본 파일
 ├── vercel.json                   # 정적 배포 및 보안 헤더
 ├── api/steppay/checkout.mjs       # 서버 전용 StepPay checkout endpoint
+├── api/visitor/country.mjs        # Vercel Edge 국가 코드 감지 endpoint
 ├── lib/steppay-checkout.mjs       # StepPay 요청·응답 검증 로직
 ├── .env.example                   # 서버 환경변수 자리표시자
 └── scripts/validate-static-site.mjs
