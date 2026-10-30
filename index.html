@@ -392,6 +392,25 @@
     .modal-card--cyan { border-color: var(--cyan); box-shadow: 10px 10px 0 var(--cyan), 0 0 24px rgba(0, 255, 255, 0.4); }
 
     .start-card { position: relative; }
+    .language-toggle {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid rgba(0, 255, 255, 0.7);
+      border-radius: 2px;
+      background: rgba(0, 255, 255, 0.08);
+      color: var(--cyan);
+      font: 700 11px/1 ui-monospace, monospace;
+      letter-spacing: .05em;
+      cursor: pointer;
+    }
+    .language-toggle:hover, .language-toggle:focus-visible {
+      color: #050505;
+      background: var(--cyan);
+      box-shadow: 0 0 14px rgba(0, 255, 255, 0.6);
+    }
     .seo-intro {
       margin-top: 20px;
       padding-top: 16px;
@@ -862,6 +881,7 @@
         <button id="start-share-btn" class="start-share-icon" type="button" aria-label="GeoPinder 공유하기" title="공유하기">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"></path></svg>
         </button>
+        <button id="language-toggle" class="language-toggle" type="button" aria-label="언어 전환" title="한국어 / English">한국어 / EN</button>
         <h1 id="start-title">GeoPinder</h1>
         <p class="modal-subtitle">~ Arcade Edition ~</p>
         <div class="ranking-box">
@@ -1079,8 +1099,137 @@
         hard: 10
       });
       const $ = (id) => document.getElementById(id);
+      const LANGUAGE_STORAGE_KEY = 'geopinder.language.v1';
+      const translationPairs = [
+        ['GeoPinder Arcade 게임', 'GeoPinder Arcade game'], ['게임 소개', 'About the game'], ['지구본 위에서 랜드마크 위치를 찾는 아케이드 게임', 'An arcade game about finding landmarks on a globe'],
+        ['사진과 힌트를 보고 3D 지구본의 위치를 선택하세요. 실제 위치와의 거리가 짧을수록 높은 점수를 얻습니다.', 'Look at the photo and hint, then choose a location on the 3D globe. The closer you are, the higher your score.'],
+        ['게임 상태', 'Game status'], ['현재 문제', 'Current question'], ['문제 랜드마크 이미지', 'Landmark image for the question'], ['문제를 불러오는 중입니다.', 'Loading question...'], ['상대방의 제출을 기다리는 중입니다.', 'Waiting for your opponent to submit...'], ['여기가 확실해!', 'This is my guess!'],
+        ['공유하기', 'Share'], ['GeoPinder 공유하기', 'Share GeoPinder'], ['난이도 선택 (Difficulty)', 'Choose difficulty'], ['난이도 선택', 'Choose difficulty'], ['초급', 'EASY'], ['중급', 'NORMAL'], ['고급', 'HARD'], ['제한 없음', 'NO TIMER'], ['1P 혼자하기', '1P SOLO'], ['2P 대결하기', '2P BATTLE'], ['문제 제보', 'SUBMIT QUESTION'], ['개발자 후원', 'SUPPORT DEVELOPER'],
+        ['3D 세계 지리 퀴즈 게임', '3D World Geography Quiz'], ['GeoPinder Arcade는 사진과 힌트를 보고 3D 지구본에서 세계 랜드마크의 위치를 찾는 무료 웹 게임입니다. 실제 위치와 가까운 곳을 찍을수록 높은 점수를 얻고, 친구와 2P 대결로 정확도를 겨룰 수 있습니다.', 'GeoPinder Arcade is a free web game where you find world landmarks on a 3D globe from a photo and hint. Get closer to the real location for a higher score, or challenge a friend in 2P mode.'],
+        ['GeoPinder 게임 안내', 'GeoPinder game guide'], ['GeoPinder는 어떻게 플레이하나요?', 'How do I play GeoPinder?'], ['랜드마크 사진과 힌트를 확인한 뒤 지구본을 돌려 위치를 선택하세요. 정답과의 거리가 짧을수록 더 높은 점수를 받습니다.', 'Check the landmark photo and hint, rotate the globe, and choose a location. The shorter the distance to the answer, the higher your score.'], ['난이도별 시간 제한이 있나요?', 'Are there time limits?'], ['초급은 시간 제한이 없고, 중급은 20초, 고급은 10초 안에 위치를 선택해야 합니다.', 'Easy has no timer, Normal gives you 20 seconds, and Hard gives you 10 seconds to choose a location.'], ['친구와 함께 플레이할 수 있나요?', 'Can I play with a friend?'], ['2P 대결방을 만든 뒤 초대 링크를 공유하면 실시간으로 같은 문제를 풀며 점수를 비교할 수 있습니다.', 'Create a 2P battle room and share the invite link to solve the same questions and compare scores in real time.'],
+        ['문제 제보 창 닫기', 'Close question submission'], ['닫기', 'CLOSE'], ['새로운 랜드마크 문제를 함께 만들어 주세요.', 'Help us create new landmark questions.'], ['랜드마크 이름', 'Landmark name'], ['문제 힌트', 'Question hint'], ['예: 경복궁', 'e.g. Gyeongbokgung Palace'], ['플레이어가 위치를 추측할 수 있는 힌트를 적어 주세요.', 'Write a hint that helps players guess the location.'], ['장소 설정', 'Location'], ['장소 설정 방식', 'Location input method'], ['위도·경도 입력', 'Enter coordinates'], ['지도에서 선택', 'Choose on map'], ['위도 (Latitude)', 'Latitude'], ['경도 (Longitude)', 'Longitude'], ['지도를 클릭하면 네온 핀이 표시되고 좌표가 자동 입력됩니다.', 'Click the map to place a neon pin and fill in the coordinates.'], ['랜드마크 위치 선택 지도', 'Landmark location selection map'], ['위도와 경도를 직접 입력해 주세요.', 'Enter latitude and longitude directly.'], ['랜드마크 사진', 'Landmark photo'], ['JPEG, PNG, WebP만 가능하며 파일 크기는 최대 10MB입니다. 사진은 검토용으로만 비공개 보관됩니다.', 'JPEG, PNG, or WebP only, up to 10 MB. Photos are kept private for review only.'], ['선택한 제보 사진 미리보기', 'Preview of submitted photo'], ['회신 이메일 (선택)', 'Reply email (optional)'], ['제보 내용 보내기', 'SUBMIT QUESTION'], ['사진은 직접 촬영했거나 사용 권한이 있는 자료만 등록해 주세요.', 'Only submit photos you took or have permission to use.'],
+        ['후원 창 닫기', 'Close support dialog'], ['GeoPinder Arcade 개발·운영 후원', 'Support GeoPinder Arcade development'], ['단건 후원 금액 5,000원', 'One-time donation amount: KRW 5,000'], ['후원자 이름', 'Supporter name'], ['결제 처리에 필요한 이름과 이메일이 StepPay에 전달됨을 확인했습니다. 카드 정보는 GeoPinder에 저장되지 않습니다.', 'I understand that my name and email will be sent to StepPay for payment. GeoPinder does not store card details.'], ['₩5,000 후원하고 결제하기', 'Donate KRW 5,000 and pay'], ['결제창은 StepPay의 안전한 페이지에서 새 탭으로 열립니다. 팝업이 차단되면 현재 탭으로 이동합니다.', 'Checkout opens in a secure StepPay page in a new tab. If blocked, it opens in this tab.'],
+        ['친구에게 아래 링크를 공유하세요.', 'Share the link below with your friend.'], ['초대 링크', 'Invite link'], ['링크 복사 (COPY)', 'COPY INVITE LINK'], ['방 나가기', 'LEAVE ROOM'], ['나의 오차:', 'My error:'], ['상대 오차:', 'Opponent error:'], ['획득 점수:', 'Score earned:'], ['결과 정산하기 (FINISH)', 'FINISH RESULTS'], ['스폰서 광고', 'SPONSORED AD'], ['광고 영역', 'Advertisement area'], ['광고를 불러오는 중입니다.', 'Loading advertisement...'], ['최종 결과창으로 이동합니다.', 'Moving to the final results...'], ['랭킹에 표시할 이니셜', 'Initials shown on the leaderboard'], ['영문 또는 숫자 세 글자를 입력하세요.', 'Enter three letters or numbers.'], ['이 기기에서 마지막 이니셜을 자동 입력했습니다.', 'Your last initials were restored on this device.'], ['랭킹 등록', 'SUBMIT SCORE'], ['자랑하기', 'SHARE SCORE'], ['한판 더하기', 'PLAY AGAIN'], ['재미있었다면 커피 사주기', 'BUY THE DEVELOPER A COFFEE'], ['양쪽이 한판 더하기를 선택하면 새 대결이 시작됩니다.', 'A new battle starts when both players choose Play Again.'], ['양쪽이 한판 더하기를 선택하면 새 대결이 시작됩니다. 랭킹 등록은 선택 사항입니다.', 'Both players must choose Play Again to start. Leaderboard entry is optional.'], ['랭킹을 불러오는 중입니다.', 'Loading leaderboard...'], ['TOP 100 · 국가별 플래그는 접속 국가 기준', 'TOP 100 · Flags are based on connection country'],
+        ['TIME', 'TIME'], ['ROUND:', 'ROUND:'], ['SCORE:', 'SCORE:'], ['선택 안 함', 'No pick'], ['선택 안 함 · 0점', 'NO PICK · 0 PTS'], ['제출 완료!', 'SUBMITTED!'], ['시간 초과!', 'TIME\'S UP!'], ['친구가 접속했습니다! 게임을 시작합니다.', 'Your friend joined! Starting the game.'], ['상대방이 위치를 선택하지 않았습니다.', 'Your opponent did not choose a location.'], ['상대방이 정답을 제출했습니다.', 'Your opponent submitted a guess.'], ['상대 준비 완료 · 새 대결을 시작합니다.', 'Opponent ready · starting a new battle.'], ['상대방 준비 완료 · 한판 더하기를 누르면 즉시 시작합니다.', 'Opponent is ready · choose Play Again to start.'], ['상대방이 한판 더하기를 선택했습니다.', 'Your opponent chose Play Again.'], ['상대방의 접속을 기다리는 중입니다.', 'Waiting for your opponent to join.'], ['방 정보를 확인하는 중입니다.', 'Checking room information...'], ['호스트가 게임을 시작하기를 기다리는 중입니다.', 'Waiting for the host to start the game.'], ['대결방에서 나왔습니다.', 'You left the battle room.'], ['호스트가 대결방을 닫았습니다.', 'The host closed the battle room.'], ['랭킹 등록 완료', 'Score submitted'], ['랭킹 등록이 완료되었습니다!', 'Score submitted successfully!'], ['첫 기록의 주인공이 되어보세요!', 'Set the first record!'], ['상대방 대기', 'Waiting for opponent'], ['DEMO MODE: Supabase 없이 1P 플래그 배치를 테스트합니다.', 'DEMO MODE: Testing 1P pin placement without Supabase.'], ['초급, 시간 제한 없음', 'Easy, no time limit'], ['중급, 제한 시간 20초', 'Normal, 20-second limit'], ['고급, 제한 시간 10초', 'Hard, 10-second limit'], ['게임 링크', 'Game link'], ['광고가 준비 중입니다.', 'Advertisement is preparing...'], ['광고를 불러오지 못했습니다.', 'Could not load advertisement.']
+      ];
+      const translationMap = Object.fromEntries(translationPairs.flatMap(([ko, en]) => [[ko, { ko, en }], [en, { ko, en }]]));
+      [
+        ['지구본에서 위치를 다시 선택하세요.', 'Choose a location on the globe again.'], ['Supabase URL과 Anon Key를 설정한 뒤 다시 시도하세요.', 'Set the Supabase URL and anon key, then try again.'], ['전송 중...', 'Sending...'], ['사진을 업로드하고 제보 내용을 접수하는 중입니다.', 'Uploading the photo and submitting your question...'], ['제보 접수는 Supabase 연결 설정 후 사용할 수 있습니다.', 'Question submission requires a Supabase connection.'], ['제보가 접수되었습니다. 검토 후 게임 문제로 등록됩니다.', 'Question submitted. It will be reviewed before being added to the game.'], ['제보 전송에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'Question submission failed. Please try again later.'], ['랜드마크 이름, 힌트, 사진을 모두 입력해 주세요.', 'Enter a landmark name, hint, and photo.'], ['장소 좌표를 확인해 주세요.', 'Check the location coordinates.'], ['필수 사진을 확인해 주세요.', 'Check the required photo.'], ['랜드마크 사진을 등록해 주세요.', 'Add a landmark photo.'], ['JPEG, PNG, WebP 사진만 등록할 수 있습니다.', 'Only JPEG, PNG, and WebP photos are accepted.'], ['사진 용량은 최대 10MB입니다.', 'Photos must be 10 MB or smaller.'], ['사진 업로드에 실패했습니다.', 'Photo upload failed.'], ['제보 저장에 실패했습니다.', 'Saving the question failed.'], ['이름, 이메일, 결제 정보 전송 동의를 확인해 주세요.', 'Confirm your name, email, and consent to send payment information.'], ['결제창 준비 중...', 'Preparing checkout...'], ['결제 페이지를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.', 'Could not prepare checkout. Please try again later.'], ['결제창을 새 탭에서 열었습니다. 결제가 끝난 뒤 이 게임 탭으로 돌아오세요.', 'Checkout opened in a new tab. Return to this game tab after payment.'], ['팝업이 차단되어 현재 탭에서 StepPay 결제 페이지로 이동합니다.', 'The popup was blocked, so StepPay checkout will open in this tab.'], ['결제 완료 화면에서 돌아왔습니다. 실제 결제 상태는 StepPay 결제 내역에서 확인하세요.', 'You returned from checkout. Check the StepPay payment history for the final status.'], ['후원 결제를 취소했습니다. 게임은 그대로 이어집니다.', 'The donation was cancelled. The game will continue.'], ['랭킹을 불러오지 못했습니다.', 'Could not load the leaderboard.'], ['Supabase를 설정하면 글로벌 랭킹이 표시됩니다.', 'Configure Supabase to show the global leaderboard.'], ['이니셜은 영문 또는 숫자 3글자로 입력하세요.', 'Enter three letters or numbers for your initials.'], ['랭킹 저장에 실패했습니다. 권한을 확인하세요.', 'Could not save the score. Check permissions.'], ['문제를 불러오지 못했습니다. Supabase 설정을 확인하세요.', 'Could not load questions. Check the Supabase configuration.'], ['문제 데이터를 찾을 수 없습니다.', 'Question data was not found.'], ['3D 지구본을 불러오지 못했습니다. 네트워크를 확인하세요.', 'Could not load the 3D globe. Check your network connection.'], ['국가 경계를 불러오지 못했습니다.', 'Could not load country borders.'], ['문제 사진을 불러오지 못해 대체 이미지를 표시합니다.', 'The question photo could not be loaded, so a fallback image is shown.'], ['지구본을 클릭해 위치를 먼저 선택하세요.', 'Click the globe to choose a location first.'], ['게임 링크가 복사되었습니다.', 'Game link copied.'], ['게임 링크가 복사되었습니다. 친구에게 보내세요.', 'Game link copied. Send it to your friend.'], ['존재하지 않거나 만료된 방입니다.', 'This room does not exist or has expired.'], ['대결방을 만들지 못했습니다. 데이터 권한을 확인하세요.', 'Could not create the battle room. Check data permissions.'], ['멀티플레이 연결에 실패했습니다.', 'Multiplayer connection failed.'], ['나가는 중...', 'Leaving...'], ['친구와의 대결을 준비합니다.', 'Preparing a battle with your friend.'], ['상대방이 위치를 선택하지 않았습니다.', 'Your opponent did not choose a location.'], ['상대방이 정답을 제출했습니다.', 'Your opponent submitted a guess.']
+      ].forEach(([ko, en]) => { translationMap[ko] = { ko, en }; translationMap[en] = { ko, en }; });
+      let currentLanguage = 'ko';
+      let translatingDom = false;
+
+      function detectLanguage() {
+        const requested = new URLSearchParams(window.location.search).get('lang');
+        if (requested === 'ko' || requested === 'en') return requested;
+        try {
+          const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+          if (saved === 'ko' || saved === 'en') return saved;
+        } catch { /* Continue with browser language. */ }
+        return /^en(?:-|$)/i.test(navigator.language || '') ? 'en' : 'ko';
+      }
+
+      function translateKnownText(value) {
+        const text = String(value ?? '');
+        const pair = translationMap[text.trim()];
+        if (pair) return pair[currentLanguage];
+        if (currentLanguage === 'en') {
+          return text
+            .replace(/^(\d+)초 후 최종 결과창으로 이동합니다\.$/, '$1 seconds left. Moving to the final results.')
+            .replace(/^지도 핀 선택 완료: (.+)$/, 'Map pin selected: $1')
+            .replace(/^위도와 경도가 입력되었습니다\.$/, 'Coordinates entered.')
+            .replace(/^([\w.-]+) · ([\d.]+)MB$/, '$1 · $2 MB')
+            .replace(/^문제 데이터가 (\d+)개 이상 필요합니다\.$/, 'At least $1 questions are required.')
+            .replace(/^랭킹 등록 완료 · 재대결은 아래에서 바로 시작할 수 있습니다\.$/, 'Score submitted · You can start a rematch below.')
+            .replace(/^랭킹 등록 완료$/, 'Score submitted');
+        }
+        return text
+          .replace(/^(\d+) seconds left\. Moving to the final results\.$/, '$1초 후 최종 결과창으로 이동합니다.')
+          .replace(/^Map pin selected: (.+)$/, '지도 핀 선택 완료: $1')
+          .replace(/^Coordinates entered\.$/, '위도와 경도가 입력되었습니다.')
+          .replace(/^At least (\d+) questions are required\.$/, '문제 데이터가 $1개 이상 필요합니다.')
+          .replace(/^Score submitted · You can start a rematch below\.$/, '랭킹 등록 완료 · 재대결은 아래에서 바로 시작할 수 있습니다.');
+      }
+
+      function translateTextNode(node) {
+        const value = node.nodeValue;
+        if (!value || !value.trim()) return;
+        const translated = translateKnownText(value);
+        if (translated !== value) node.nodeValue = translated;
+      }
+
+      function translateElement(root = document.body) {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: (node) => ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.parentElement?.tagName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+        });
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(translateTextNode);
+        root.querySelectorAll?.('[aria-label], [title], [placeholder]').forEach((element) => {
+          ['aria-label', 'title', 'placeholder'].forEach((attribute) => {
+            if (element.hasAttribute(attribute)) element.setAttribute(attribute, translateKnownText(element.getAttribute(attribute)));
+          });
+        });
+      }
+
+      function updateLanguageMetadata() {
+        const english = currentLanguage === 'en';
+        document.documentElement.lang = currentLanguage;
+        document.title = english ? 'GeoPinder Arcade: 3D World Geography Quiz' : 'GeoPinder Arcade: 3D 세계 지리 퀴즈 게임';
+        const description = english ? 'A free 3D world geography quiz game. Find landmarks on a globe and challenge a friend in real-time 2P mode.' : 'GeoPinder Arcade는 3D 지구본에서 세계 랜드마크 위치를 찾고 거리 점수를 겨루는 무료 웹 지리 퀴즈 게임입니다. 1P와 실시간 2P 대결을 지원합니다.';
+        document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', document.title);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
+        document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', document.title);
+        document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', description);
+        document.querySelector('meta[property="og:locale"]')?.setAttribute('content', english ? 'en_US' : 'ko_KR');
+        const activeQuestion = currentQuestions?.[currentRound - 1];
+        if (activeQuestion && $('quiz-hint')) {
+          const questionHint = english ? (activeQuestion.hintEn || activeQuestion.hint || 'No hint available.') : (activeQuestion.hint || '힌트가 없습니다.');
+          $('quiz-hint').textContent = `“${questionHint}”`;
+          if (!$('quiz-panel').classList.contains('hidden')) setQuestionImage(activeQuestion);
+        }
+      }
+
+      function applyLanguage(language) {
+        currentLanguage = language === 'en' ? 'en' : 'ko';
+        try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, currentLanguage); } catch { /* Optional preference only. */ }
+        translatingDom = true;
+        translateElement();
+        updateLanguageMetadata();
+        const toggle = $('language-toggle');
+        if (toggle) {
+          toggle.textContent = currentLanguage === 'en' ? 'EN / 한국어' : '한국어 / EN';
+          toggle.setAttribute('aria-label', currentLanguage === 'en' ? 'Switch to Korean' : 'Switch to English');
+          toggle.title = currentLanguage === 'en' ? 'Switch to Korean' : 'Switch to English';
+        }
+        translatingDom = false;
+      }
+
+      function uiText(korean, english) {
+        return currentLanguage === 'en' ? english : korean;
+      }
+
+      const initialLanguage = detectLanguage();
+      window.geopinderI18n = { applyLanguage, translateKnownText, uiText, get language() { return currentLanguage; } };
       const escapeMarkup = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
       const modals = ['start-modal', 'report-modal', 'support-modal', 'waiting-modal', 'result-modal', 'ad-modal', 'gameover-modal'];
+
+      window.setTimeout(() => {
+        applyLanguage(initialLanguage);
+        $('language-toggle')?.addEventListener('click', () => applyLanguage(currentLanguage === 'en' ? 'ko' : 'en'));
+        const observer = new MutationObserver((mutations) => {
+          if (translatingDom) return;
+          mutations.forEach((mutation) => {
+            if (mutation.type === 'characterData') translateTextNode(mutation.target);
+            mutation.addedNodes?.forEach((node) => {
+              if (node.nodeType === Node.TEXT_NODE) translateTextNode(node);
+              else if (node.nodeType === Node.ELEMENT_NODE) translateElement(node);
+            });
+          });
+        });
+        observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+      }, 0);
 
       function normalizeInitials(value) {
         return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
@@ -1148,13 +1297,13 @@
 
       // Supabase를 아직 설정하지 않은 배포에서도 1P 플래그 배치와 점수 흐름을 바로 테스트할 수 있는 공개 데모 문제입니다.
       const FALLBACK_QUESTIONS = [
-        { hint: '빛의 도시 파리에 있는 철제 탑입니다.', lat: 48.8584, lng: 2.2945, img: createDemoArtwork('EIFFEL TOWER', '#ff3366') },
-        { hint: '뉴욕 항구에서 횃불을 든 자유의 상징을 찾아보세요.', lat: 40.6892, lng: -74.0445, img: createDemoArtwork('STATUE OF LIBERTY', '#00ffff') },
-        { hint: '인도 아그라에 있는 하얀 대리석 묘소입니다.', lat: 27.1751, lng: 78.0421, img: createDemoArtwork('TAJ MAHAL', '#ffd700') },
-        { hint: '호주 시드니 항구의 조개 껍질 모양 공연장입니다.', lat: -33.8568, lng: 151.2153, img: createDemoArtwork('SYDNEY OPERA HOUSE', '#33ff66') },
-        { hint: '이집트 기자 고원에 있는 거대한 고대 피라미드입니다.', lat: 29.9792, lng: 31.1342, img: createDemoArtwork('GREAT PYRAMID', '#ff3366') },
-        { hint: '브라질 리우데자네이루 산 정상에서 두 팔을 벌린 예수상입니다.', lat: -22.9519, lng: -43.2105, img: createDemoArtwork('CHRIST THE REDEEMER', '#00ffff') },
-        { hint: '중국 북부 산지를 따라 길게 이어진 성벽입니다.', lat: 40.4319, lng: 116.5704, img: createDemoArtwork('GREAT WALL', '#ffd700') }
+        { hint: '빛의 도시 파리에 있는 철제 탑입니다.', hintEn: 'An iron tower in Paris, the City of Light.', lat: 48.8584, lng: 2.2945, img: createDemoArtwork('EIFFEL TOWER', '#ff3366') },
+        { hint: '뉴욕 항구에서 횃불을 든 자유의 상징을 찾아보세요.', hintEn: 'Find the symbol of freedom holding a torch in New York Harbor.', lat: 40.6892, lng: -74.0445, img: createDemoArtwork('STATUE OF LIBERTY', '#00ffff') },
+        { hint: '인도 아그라에 있는 하얀 대리석 묘소입니다.', hintEn: 'A white marble mausoleum in Agra, India.', lat: 27.1751, lng: 78.0421, img: createDemoArtwork('TAJ MAHAL', '#ffd700') },
+        { hint: '호주 시드니 항구의 조개 껍질 모양 공연장입니다.', hintEn: 'A shell-shaped concert hall in Sydney Harbour, Australia.', lat: -33.8568, lng: 151.2153, img: createDemoArtwork('SYDNEY OPERA HOUSE', '#33ff66') },
+        { hint: '이집트 기자 고원에 있는 거대한 고대 피라미드입니다.', hintEn: 'A massive ancient pyramid on the Giza Plateau in Egypt.', lat: 29.9792, lng: 31.1342, img: createDemoArtwork('GREAT PYRAMID', '#ff3366') },
+        { hint: '브라질 리우데자네이루 산 정상에서 두 팔을 벌린 예수상입니다.', hintEn: 'A statue of Jesus with outstretched arms above Rio de Janeiro, Brazil.', lat: -22.9519, lng: -43.2105, img: createDemoArtwork('CHRIST THE REDEEMER', '#00ffff') },
+        { hint: '중국 북부 산지를 따라 길게 이어진 성벽입니다.', hintEn: 'A long wall stretching across the mountains of northern China.', lat: 40.4319, lng: 116.5704, img: createDemoArtwork('GREAT WALL', '#ffd700') }
       ];
 
       let allQuestions = [];
@@ -1214,7 +1363,7 @@
       function showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast${type === 'error' ? ' error' : ''}`;
-        toast.textContent = message;
+        toast.textContent = translateKnownText(message);
         $('toast-container').appendChild(toast);
         window.setTimeout(() => {
           toast.style.animation = 'toast-out 180ms ease-in forwards';
@@ -1284,30 +1433,30 @@
 
       function setBusy(button, isBusy, label) {
         button.disabled = isBusy;
-        if (label) button.textContent = label;
+        if (label) button.textContent = translateKnownText(label);
       }
 
       function setSupportStatus(message = '', tone = 'info') {
         const status = $('support-status');
-        status.textContent = message;
+        status.textContent = translateKnownText(message);
         status.dataset.tone = tone;
       }
 
       function setReportStatus(message = '', tone = 'info') {
         const status = $('report-status');
-        status.textContent = message;
+        status.textContent = translateKnownText(message);
         status.dataset.tone = tone;
       }
 
       function setReportLocationStatus(message = '', tone = 'info') {
         const status = $('report-location-status');
-        status.textContent = message;
+        status.textContent = translateKnownText(message);
         status.dataset.tone = tone;
       }
 
       function setReportPhotoStatus(message = '', tone = 'info') {
         const status = $('report-photo-status');
-        status.textContent = message;
+        status.textContent = translateKnownText(message);
         status.dataset.tone = tone;
       }
 
@@ -1668,14 +1817,14 @@
       function setQuestionImage(question) {
         const image = $('quiz-img');
         const credit = $('image-credit');
-        const hint = question?.hint || '문제 랜드마크 이미지';
+        const hint = currentLanguage === 'en' ? (question?.hintEn || question?.hint || 'Landmark image for the question') : (question?.hint || '문제 랜드마크 이미지');
         const fallback = createDemoArtwork('IMAGE UNAVAILABLE', '#ff3366');
         const attribution = landmarkAttributions.get(String(question?.id));
         credit.innerHTML = attribution?.source_url
-          ? `이미지: <a href="${escapeMarkup(attribution.source_url)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> · ${escapeMarkup(attribution.artist || '저작자 표기 확인 필요')} · ${escapeMarkup(attribution.license || '라이선스 확인 필요')}`
+          ? `${currentLanguage === 'en' ? 'Image' : '이미지'}: <a href="${escapeMarkup(attribution.source_url)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> · ${escapeMarkup(attribution.artist || (currentLanguage === 'en' ? 'Attribution pending' : '저작자 표기 확인 필요'))} · ${escapeMarkup(attribution.license || (currentLanguage === 'en' ? 'License pending' : '라이선스 확인 필요'))}`
           : '';
         image.dataset.fallbackApplied = 'false';
-        image.alt = `${hint} 문제 이미지`;
+        image.alt = `${hint} ${currentLanguage === 'en' ? 'question image' : '문제 이미지'}`;
         image.loading = 'eager';
         image.decoding = 'async';
         image.classList.add('is-loading');
@@ -1684,7 +1833,7 @@
           if (image.dataset.fallbackApplied === 'true') return;
           image.dataset.fallbackApplied = 'true';
           image.src = fallback;
-          image.alt = `${hint} 문제 이미지 (대체 이미지)`;
+          image.alt = `${hint} ${currentLanguage === 'en' ? '(fallback image)' : '문제 이미지 (대체 이미지)'}`;
           showToast('문제 사진을 불러오지 못해 대체 이미지를 표시합니다.', 'error');
         };
         image.src = getQuestionImageUrl(question) || fallback;
@@ -1751,7 +1900,7 @@
 
       function setRematchStatus(message, tone = 'idle') {
         $('rematch-panel').dataset.tone = tone;
-        $('rematch-status').textContent = message;
+        $('rematch-status').textContent = translateKnownText(message);
       }
 
       function resetRematchState() {
@@ -1920,7 +2069,8 @@
           return;
         }
         setQuestionImage(question);
-        $('quiz-hint').textContent = `“${question.hint || '힌트가 없습니다.'}”`;
+        const questionHint = currentLanguage === 'en' ? (question.hintEn || question.hint || 'No hint available.') : (question.hint || '힌트가 없습니다.');
+        $('quiz-hint').textContent = `“${questionHint}”`;
         $('submit-btn').disabled = true;
         $('submit-btn').textContent = '여기가 확실해!';
         $('sync-msg').style.display = 'none';
@@ -2029,11 +2179,11 @@
         updateHUD();
         $('result-title').textContent = title;
         $('result-title').style.color = title === 'PERFECT!!' ? 'var(--gold)' : 'var(--pink)';
-        $('result-distance').textContent = hasSelection ? `${myDistance.toFixed(1)} km` : '선택 안 함';
+        $('result-distance').textContent = hasSelection ? `${myDistance.toFixed(1)} km` : translateKnownText('선택 안 함');
         $('result-score').textContent = `+ ${score} PTS`;
         $('next-btn').textContent = currentRound >= TOTAL_ROUNDS ? '결과 정산하기 (FINISH)' : 'NEXT ROUND >>';
         $('next-btn').style.display = isMultiplayer && myRole === 'guest' ? 'none' : 'inline-block';
-        if (isMultiplayer && myRole === 'guest') $('result-title').textContent = `${title} (호스트 대기)`;
+        if (isMultiplayer && myRole === 'guest') $('result-title').textContent = `${title} ${currentLanguage === 'en' ? '(waiting for host)' : '(호스트 대기)'}`;
         clearTimeout(resultRevealTimer);
         resultRevealTimer = window.setTimeout(() => showModal('result-modal'), 1250);
       }
@@ -2438,8 +2588,10 @@
       function shareGame(includeScore = false) {
         initAudio();
         playSound('pin');
-        const scoreText = includeScore ? `\n내 점수: ${totalScore.toString().padStart(5, '0')}점!` : '';
-        const text = `GeoPinder Arcade${scoreText}\n3D 지구본에서 세계 랜드마크 찾기에 도전해보세요!`;
+        const scoreText = includeScore ? (currentLanguage === 'en' ? `\nMy score: ${totalScore.toString().padStart(5, '0')} points!` : `\n내 점수: ${totalScore.toString().padStart(5, '0')}점!`) : '';
+        const text = currentLanguage === 'en'
+          ? `GeoPinder Arcade${scoreText}\nChallenge yourself to find world landmarks on a 3D globe!`
+          : `GeoPinder Arcade${scoreText}\n3D 지구본에서 세계 랜드마크 찾기에 도전해보세요!`;
         const data = { title: 'GeoPinder Arcade', text, url: `${window.location.origin}${window.location.pathname}` };
         if (navigator.share) navigator.share(data).catch(() => {});
         else navigator.clipboard?.writeText(`${text}\n${data.url}`).then(() => showToast('게임 링크가 복사되었습니다.'));
