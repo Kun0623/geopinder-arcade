@@ -51,7 +51,8 @@ expect(/property="og:image:type" content="image\/png"/i.test(index) && /name="tw
 expect(/<link rel="canonical" href="https:\/\/geopinder-arcade\.vercel\.app\/">/i.test(index), 'Production canonical URL이 없습니다.');
 expect(/property="og:url" content="https:\/\/geopinder-arcade\.vercel\.app\//i.test(index) && /property="og:image" content="https:\/\/geopinder-arcade\.vercel\.app\/og-image\.png"/i.test(index), 'OG 대표 URL·공유 이미지가 없습니다.');
 expect(/application\/ld\+json/.test(index) && /"@type": "VideoGame"/.test(index), 'VideoGame JSON-LD 구조화 데이터가 없습니다.');
-expect(/class="seo-intro"/.test(index) && /3D 세계 지리 퀴즈 게임/.test(index) && /실시간 2P 대결/.test(index), '초기 HTML에 검색 가능한 게임 소개 콘텐츠가 없습니다.');
+expect(/class="seo-intro"/.test(index) && /3D World Geography Quiz/.test(index) && /world landmark quiz/.test(index) && /real-time multiplayer geography game/.test(index), '초기 HTML에 영문 검색 가능한 게임 소개 콘텐츠가 없습니다.');
+expect(/3D geography quiz/.test(index) && /world landmark quiz/.test(index) && /free geography game/.test(index) && /multiplayer geography game/.test(index), '영문 핵심 검색어가 메타데이터와 구조화 데이터에 없습니다.');
 expect(/"@type": "FAQPage"/.test(index) && /GeoPinder는 어떻게 플레이하나요\?/.test(index) && /난이도별 시간 제한이 있나요\?/.test(index), '화면 FAQ와 연결된 FAQPage JSON-LD가 없습니다.');
 expect(/"playMode": "SinglePlayer, MultiPlayer"/.test(index) && /"isAccessibleForFree": true/.test(index) && /"price": "0"/.test(index), 'VideoGame 무료·싱글·멀티플레이 구조화 데이터가 없습니다.');
 expect(/id="language-toggle"/.test(index) && /LANGUAGE_STORAGE_KEY/.test(index) && /function applyLanguage\(language\)/.test(index), '한국어·영어 수동 언어 전환과 선택 기억 기능이 없습니다.');

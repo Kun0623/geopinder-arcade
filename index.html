@@ -7,22 +7,23 @@
   <meta name="application-name" content="GeoPinder Arcade">
   <meta name="author" content="GeoPinder Arcade">
   <meta name="robots" content="index, follow, max-image-preview:large">
-  <meta name="description" content="GeoPinder Arcade는 3D 지구본에서 세계 랜드마크 위치를 찾고 거리 점수를 겨루는 무료 웹 지리 퀴즈 게임입니다. 1P와 실시간 2P 대결을 지원합니다.">
-  <meta name="keywords" content="GeoPinder, 지리 퀴즈, 3D 지구본, 아케이드 게임, 멀티플레이, 세계 랜드마크">
+  <meta name="description" content="Free 3D geography quiz and world landmark game. Find locations on an interactive globe, score by distance, and challenge friends in real-time multiplayer.">
+  <meta name="keywords" content="GeoPinder Arcade, 3D geography quiz, world landmark quiz, free geography game, multiplayer geography game, browser geography game, interactive globe game, geography trivia">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="GeoPinder Arcade: 3D 세계 지리 퀴즈 게임">
-  <meta property="og:description" content="무료 3D 세계 지리 퀴즈 게임. 랜드마크를 찾고 친구와 실시간 2P 대결을 즐겨보세요.">
+  <meta property="og:title" content="GeoPinder Arcade: Free 3D Geography Quiz Game">
+  <meta property="og:description" content="Find world landmarks on an interactive 3D globe, score by distance, and play real-time multiplayer matches in your browser.">
   <meta property="og:url" content="https://geopinder-arcade.vercel.app/">
   <meta property="og:image" content="https://geopinder-arcade.vercel.app/og-image.png">
   <meta property="og:image:alt" content="GeoPinder Arcade 3D 세계 지리 퀴즈 게임">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:locale" content="ko_KR">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ko_KR">
   <meta property="og:site_name" content="GeoPinder Arcade">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="GeoPinder Arcade: 3D 세계 지리 퀴즈 게임">
-  <meta name="twitter:description" content="무료 3D 세계 지리 퀴즈 게임. 랜드마크를 찾고 친구와 실시간 2P 대결을 즐겨보세요.">
+  <meta name="twitter:title" content="GeoPinder Arcade: Free 3D Geography Quiz Game">
+  <meta name="twitter:description" content="Find world landmarks on an interactive 3D globe and challenge friends in a free browser geography game.">
   <meta name="twitter:image" content="https://geopinder-arcade.vercel.app/og-image.png">
   <meta name="twitter:image:alt" content="GeoPinder Arcade 3D 세계 지리 퀴즈 게임">
   <meta name="google-adsense-account" content="ca-pub-7636964134092663">
@@ -35,7 +36,7 @@
     gtag('js', new Date());
     gtag('config', 'G-QPH01GBB16', { anonymize_ip: true });
   </script>
-  <title>GeoPinder Arcade: 3D 세계 지리 퀴즈 게임</title>
+  <title>GeoPinder Arcade: Free 3D Geography Quiz Game</title>
   <link rel="canonical" href="https://geopinder-arcade.vercel.app/">
   <script type="application/ld+json">
     {
@@ -43,7 +44,9 @@
       "@type": "VideoGame",
       "name": "GeoPinder Arcade",
       "url": "https://geopinder-arcade.vercel.app/",
-      "description": "3D 지구본에서 세계 랜드마크의 위치를 찾고 거리 점수를 겨루는 레트로 아케이드 지리 퀴즈 게임입니다.",
+      "alternateName": "Free World Landmark Quiz",
+      "description": "GeoPinder Arcade is a free 3D geography quiz and world landmark quiz game. Find locations on an interactive globe, score by distance, and challenge friends in real-time multiplayer.",
+      "keywords": "3D geography quiz, world landmark quiz, free geography game, multiplayer geography game, browser geography game",
       "genre": ["Geography", "Quiz", "Arcade"],
       "gamePlatform": "Web browser",
       "operatingSystem": "Any",
@@ -59,7 +62,7 @@
       },
       "applicationCategory": "Game",
       "image": "https://geopinder-arcade.vercel.app/og-image.png",
-      "inLanguage": "ko"
+      "inLanguage": ["en", "ko"]
     }
   </script>
   <script type="application/ld+json">
@@ -858,9 +861,9 @@
     <div id="globeViz" aria-hidden="true"></div>
 
     <section class="visually-hidden" aria-label="게임 소개">
-      <h1>GeoPinder Arcade 3D 세계 지리 퀴즈</h1>
-      <h2>지구본 위에서 랜드마크 위치를 찾는 아케이드 게임</h2>
-      <p>사진과 힌트를 보고 3D 지구본의 위치를 선택하세요. 실제 위치와의 거리가 짧을수록 높은 점수를 얻습니다.</p>
+      <h1>GeoPinder Arcade — Free 3D Geography Quiz</h1>
+      <h2>Find world landmarks on an interactive 3D globe</h2>
+      <p>GeoPinder is a free browser geography game and world landmark quiz. Look at a landmark photo and hint, place your guess on the interactive globe, and earn more points when your location is closer to the answer.</p>
     </section>
 
     <div id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -907,8 +910,8 @@
           <button class="btn donate-btn btn-yellow" type="button">개발자 후원</button>
         </div>
         <section class="seo-intro" aria-labelledby="game-intro-title">
-          <h2 id="game-intro-title">3D 세계 지리 퀴즈 게임</h2>
-          <p>GeoPinder Arcade는 사진과 힌트를 보고 3D 지구본에서 세계 랜드마크의 위치를 찾는 무료 웹 게임입니다. 실제 위치와 가까운 곳을 찍을수록 높은 점수를 얻고, 친구와 2P 대결로 정확도를 겨룰 수 있습니다.</p>
+          <h2 id="game-intro-title">3D World Geography Quiz · 세계 지리 퀴즈 게임</h2>
+          <p>GeoPinder Arcade is a free 3D geography quiz and world landmark quiz for the browser. Study a landmark photo and hint, place your guess on the interactive globe, and score higher when you are closer to the real location. Play solo or challenge a friend in a real-time multiplayer geography game.</p>
           <div class="seo-faq" aria-label="GeoPinder 게임 안내">
             <details>
               <summary>GeoPinder는 어떻게 플레이하나요?</summary>
