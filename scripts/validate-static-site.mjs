@@ -56,6 +56,8 @@ expect(/"@type": "FAQPage"/.test(index) && /GeoPinder는 어떻게 플레이하�
 expect(/"playMode": "SinglePlayer, MultiPlayer"/.test(index) && /"isAccessibleForFree": true/.test(index) && /"price": "0"/.test(index), 'VideoGame 무료·싱글·멀티플레이 구조화 데이터가 없습니다.');
 expect(/id="language-toggle"/.test(index) && /LANGUAGE_STORAGE_KEY/.test(index) && /function applyLanguage\(language\)/.test(index), '한국어·영어 수동 언어 전환과 선택 기억 기능이 없습니다.');
 expect(/navigator\.language/.test(index) && /new URLSearchParams\(window\.location\.search\)/.test(index) && /new MutationObserver/.test(index), '브라우저 언어 감지와 동적 UI 번역 감시가 없습니다.');
+expect(/\['이름', 'Name'\]/.test(index) && /\['이메일', 'Email'\]/.test(index), '후원자 이름·이메일 라벨의 영어 번역이 없습니다.');
+expect(/\['새 탭에서 결제 중', 'Checkout in new tab'\]/.test(index) && /\['StepPay 결제 페이지를 안전하게 준비하고 있습니다\.', 'Preparing a secure StepPay checkout\.\.\.'\]/.test(index), 'StepPay 동적 상태 문구의 영어 번역이 없습니다.');
 expect(/hintEn/.test(index) && /No hint available\./.test(index), '영어 데모 문제 힌트 fallback이 없습니다.');
 expect(/hint_en/.test(index) && /hint_en \|\| question\.hintEn/.test(index), 'Supabase hint_en 영어 힌트 컬럼 연결이 없습니다.');
 expect(existsSync(resolve(root, 'supabase/migrations/20261030130500_add_english_landmark_hints.sql')), '영어 랜드마크 힌트 migration 파일이 없습니다.');
