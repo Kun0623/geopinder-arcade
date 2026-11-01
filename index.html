@@ -51,7 +51,7 @@
       "gamePlatform": "Web browser",
       "operatingSystem": "Any",
       "playMode": "SinglePlayer, MultiPlayer",
-      "featureList": ["3D interactive globe", "landmark geography quiz", "distance-based scoring", "real-time 2-player match", "difficulty timers"],
+      "featureList": ["3D interactive globe", "landmark geography quiz", "world landmark guessing game", "interactive map quiz", "geography trivia", "distance-based scoring", "real-time 2-player match", "difficulty timers"],
       "isAccessibleForFree": true,
       "offers": {
         "@type": "Offer",
@@ -912,6 +912,7 @@
         <section class="seo-intro" aria-labelledby="game-intro-title">
           <h2 id="game-intro-title">3D World Geography Quiz · 세계 지리 퀴즈 게임</h2>
           <p>GeoPinder Arcade is a free 3D geography quiz and world landmark quiz for the browser. Study a landmark photo and hint, place your guess on the interactive globe, and score higher when you are closer to the real location. Play solo or challenge a friend in a real-time multiplayer geography game.</p>
+          <p lang="en">Test your world geography knowledge with a landmark guessing game built for quick rounds. GeoPinder combines an interactive map quiz, geography trivia, and distance-based scoring in a free browser game with no installation required.</p>
           <div class="seo-faq" aria-label="GeoPinder 게임 안내">
             <details>
               <summary>GeoPinder는 어떻게 플레이하나요?</summary>
@@ -1183,8 +1184,8 @@
       function updateLanguageMetadata() {
         const english = currentLanguage === 'en';
         document.documentElement.lang = currentLanguage;
-        document.title = english ? 'GeoPinder Arcade: 3D World Geography Quiz' : 'GeoPinder Arcade: 3D 세계 지리 퀴즈 게임';
-        const description = english ? 'A free 3D world geography quiz game. Find landmarks on a globe and challenge a friend in real-time 2P mode.' : 'GeoPinder Arcade는 3D 지구본에서 세계 랜드마크 위치를 찾고 거리 점수를 겨루는 무료 웹 지리 퀴즈 게임입니다. 1P와 실시간 2P 대결을 지원합니다.';
+        document.title = english ? 'GeoPinder Arcade: Free 3D Geography Quiz Game' : 'GeoPinder Arcade: 3D 세계 지리 퀴즈 게임';
+        const description = english ? 'Free 3D geography quiz and world landmark game. Find locations on an interactive globe, score by distance, and challenge friends in real-time multiplayer.' : 'GeoPinder Arcade는 3D 지구본에서 세계 랜드마크 위치를 찾고 거리 점수를 겨루는 무료 웹 지리 퀴즈 게임입니다. 1P와 실시간 2P 대결을 지원합니다.';
         document.querySelector('meta[name="description"]')?.setAttribute('content', description);
         document.querySelector('meta[property="og:title"]')?.setAttribute('content', document.title);
         document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
