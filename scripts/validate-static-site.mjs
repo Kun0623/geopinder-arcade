@@ -129,6 +129,8 @@ expect(existsSync(resolve(root, 'og-image.png')), '소셜 공유용 OG 이미지
 expect(Array.isArray(vercel.headers) && vercel.headers.length > 0, 'vercel.json 보안 헤더가 없습니다.');
 expect(/connect-src[^;]*wss:\/\/\*\.supabase\.co/i.test(cspHeader), 'Supabase Realtime을 위해 CSP connect-src에 wss://*.supabase.co가 필요합니다.');
 expect(/script-src[^;]*https:\/\/pagead2\.googlesyndication\.com/i.test(cspHeader), 'Google Auto Ads 로더를 위해 CSP script-src에 pagead2.googlesyndication.com이 필요합니다.');
+expect(/script-src[^;]*https:\/\/www\.googletagmanager\.com/i.test(cspHeader), 'GA4 gtag.js 로더를 위해 CSP script-src에 www.googletagmanager.com이 필요합니다.');
+expect(/connect-src[^;]*https:\/\/www\.google-analytics\.com/i.test(cspHeader) && /connect-src[^;]*https:\/\/\*\.google-analytics\.com/i.test(cspHeader), 'GA4 collect 요청을 위해 CSP connect-src에 Google Analytics 엔드포인트가 필요합니다.');
 expect(/frame-src[^;]*https:\/\/googleads\.g\.doubleclick\.net/i.test(cspHeader), 'Google Auto Ads iframe을 위해 CSP frame-src에 googleads.g.doubleclick.net이 필요합니다.');
 expect(/id="rematch-btn"/.test(index), '2P 게임 오버 화면에 한판 더하기 버튼이 필요합니다.');
 expect(/id="rematch-panel"[^>]*hidden/.test(index) && /id="rematch-status"[^>]*aria-live="polite"/.test(index), '2P 재대결에는 안내와 라이브 상태를 가진 rematch 패널이 필요합니다.');
