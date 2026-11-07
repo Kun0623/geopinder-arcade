@@ -64,6 +64,9 @@ expect(/3D geography quiz/.test(index) && /world landmark quiz/.test(index) && /
 expect(/World landmark guessing game/i.test(index) && /interactive map quiz/i.test(index) && /geography trivia/i.test(index), '추가 영문 검색 의도 문구가 본문·구조화 데이터에 없습니다.');
 expect(/Free Online Geography Quiz \| GeoPinder Arcade/.test(index) && /Play a free online geography quiz on a 3D globe\./.test(index), '언어 전환 시 동적 title·description이 영문 SEO 메타데이터와 일치하지 않습니다.');
 expect(/"@type": "FAQPage"/.test(index) && /GeoPinder는 어떻게 플레이하나요\?/.test(index) && /난이도별 시간 제한이 있나요\?/.test(index), '화면 FAQ와 연결된 FAQPage JSON-LD가 없습니다.');
+expect(/window\.location\.pathname\.match/.test(index) && /params\.get\('go'\)/.test(index) && /utm_campaign/.test(index) && /window\.location\.replace/.test(index), 'Vanilla 클라이언트 UTM 단축 경로 리디렉트가 없습니다.');
+expect(/free online world landmark guessing game with no download/i.test(index) && /distance-based scoring/i.test(index) && /free browser geography game with no download/i.test(index), '추가 롱테일 영문 검색 의도 문구가 초기 HTML에 없습니다.');
+expect(/Can I play a free browser geography game without downloading anything\?/.test(index) && /How does the distance-based geography score work\?/.test(index) && /world landmark guessing game that runs in a modern browser/.test(index), '추가 롱테일 FAQ와 FAQPage 답변이 없습니다.');
 expect(/"playMode": "SinglePlayer, MultiPlayer"/.test(index) && /"isAccessibleForFree": true/.test(index) && /"price": "0"/.test(index), 'VideoGame 무료·싱글·멀티플레이 구조화 데이터가 없습니다.');
 expect(/id="language-toggle"/.test(index) && /LANGUAGE_STORAGE_KEY/.test(index) && /function applyLanguage\(language\)/.test(index), '한국어·영어 수동 언어 전환과 선택 기억 기능이 없습니다.');
 expect(/navigator\.language/.test(index) && /new URLSearchParams\(window\.location\.search\)/.test(index) && /new MutationObserver/.test(index), '브라우저 언어 감지와 동적 UI 번역 감시가 없습니다.');

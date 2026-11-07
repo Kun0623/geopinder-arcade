@@ -26,6 +26,31 @@
   <meta name="twitter:description" content="Play a free world landmark quiz on an interactive 3D globe. No installation required.">
   <meta name="twitter:image" content="https://geopinder-arcade.vercel.app/og-image.png">
   <meta name="twitter:image:alt" content="GeoPinder Arcade 3D 세계 지리 퀴즈 게임">
+  <script>
+    // Static-hosting equivalent of a small /go/:channel redirect table.
+    // Use /?go=x when the host does not rewrite /go/x to index.html.
+    (() => {
+      const channels = {
+        reddit: { source: 'reddit', medium: 'social', content: 'playmygame_post' },
+        x: { source: 'x', medium: 'social', content: 'launch_post' },
+        linkedin: { source: 'linkedin', medium: 'social', content: 'devlog' },
+        naver: { source: 'naver', medium: 'referral', content: 'community_post' },
+        newsletter: { source: 'newsletter', medium: 'email', content: 'launch_email' }
+      };
+      const params = new URLSearchParams(window.location.search);
+      const cleanPathMatch = window.location.pathname.match(/^\/go\/([^/]+)\/?$/i);
+      const channelName = (cleanPathMatch?.[1] || params.get('go') || '').toLowerCase();
+      const config = channels[channelName];
+      if (!config) return;
+
+      const destination = new URL('/', window.location.origin);
+      destination.searchParams.set('utm_source', config.source);
+      destination.searchParams.set('utm_medium', config.medium);
+      destination.searchParams.set('utm_campaign', 'arcade_launch_202611');
+      destination.searchParams.set('utm_content', config.content);
+      window.location.replace(destination.toString());
+    })();
+  </script>
   <meta name="google-adsense-account" content="ca-pub-7636964134092663">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7636964134092663" crossorigin="anonymous"></script>
   <!-- Google Analytics 4: GeoPinder Arcade Web (G-QPH01GBB16) -->
@@ -104,6 +129,16 @@
           "@type": "Question",
           "name": "Does the game work on mobile?",
           "acceptedAnswer": {"@type": "Answer", "text": "Yes. The game supports touch controls and responsive layouts for modern mobile browsers."}
+        },
+        {
+          "@type": "Question",
+          "name": "Can I play a free browser geography game without downloading anything?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Yes. GeoPinder is a free online world landmark guessing game that runs in a modern browser without an app download."}
+        },
+        {
+          "@type": "Question",
+          "name": "How does the distance-based geography score work?",
+          "acceptedAnswer": {"@type": "Answer", "text": "Your score is based on how close your location guess is to the landmark’s correct location, so a more accurate guess earns more points."}
         }
       ]
     }
@@ -980,12 +1015,15 @@
           <section class="seo-intro seo-intro--english" lang="en" aria-labelledby="english-game-guide-title">
             <h2 id="english-game-guide-title">Free Online World Landmark Quiz</h2>
             <p>GeoPinder Arcade is a free browser geography game where you identify famous landmarks and place your guess on an interactive 3D globe.</p>
+            <p>A free online world landmark guessing game with no download, GeoPinder helps you practice geography by matching a location on the globe. The distance-based scoring makes every round a quick geography challenge.</p>
             <h3>How to play this geography quiz</h3>
             <p>Look at the landmark image and hint, rotate the globe, and choose the location you think is correct. The closer your guess is to the real location, the higher your score.</p>
             <h3>Play a multiplayer geography game with friends</h3>
             <p>Create a 2-player room and share the invite link. Both players solve the same world landmark challenge in real time and compare their scores.</p>
             <h3>Timed and casual geography quiz modes</h3>
             <p>Choose Easy mode with no time limit, Normal mode with 20 seconds, or Hard mode with a 10-second challenge.</p>
+            <h3>Play a free browser geography game with no download</h3>
+            <p>GeoPinder runs in a modern browser and works as a mobile-friendly geography quiz. You can play a short world landmark quiz without installing an app or creating an account.</p>
             <div class="seo-faq" aria-label="GeoPinder English FAQ">
               <details>
                 <summary>How do you play GeoPinder Arcade?</summary>
@@ -1003,6 +1041,14 @@
                 <summary>Does the game work on mobile?</summary>
                 <p>Yes. The game supports touch controls and responsive layouts for modern mobile browsers.</p>
               </details>
+                <details>
+                  <summary>Can I play a free browser geography game without downloading anything?</summary>
+                  <p>Yes. GeoPinder is a free online world landmark guessing game that runs in a modern browser without an app download.</p>
+                </details>
+                <details>
+                  <summary>How does the distance-based geography score work?</summary>
+                  <p>Your score is based on how close your location guess is to the landmark’s correct location, so a more accurate guess earns more points.</p>
+                </details>
             </div>
           </section>
           </section>
