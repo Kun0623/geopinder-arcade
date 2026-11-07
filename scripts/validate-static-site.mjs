@@ -18,6 +18,7 @@ const placesRlsSql = existsSync(resolve(root, 'supabase/migrations/2026103015000
 const rankingCountryApi = existsSync(resolve(root, 'api/ranking/country.mjs')) ? read('api/ranking/country.mjs') : '';
 const rankingCountryMigration = existsSync(resolve(root, 'supabase/migrations/20261030010000_ranking_country_flags.sql')) ? read('supabase/migrations/20261030010000_ranking_country_flags.sql') : '';
 const cspHeader = vercel.headers?.flatMap((rule) => rule.headers || []).find((header) => header.key?.toLowerCase() === 'content-security-policy')?.value || '';
+const faqJsonLd = index.match(/<script type="application\/ld\+json">\s*\{[\s\S]*?"@type": "FAQPage"[\s\S]*?<\/script>/)?.[0] || '';
 const failures = [];
 const beginSoloBody = index.match(/async function beginSolo\(\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*async function beginMultiplayer\(\)/)?.[1] || '';
 const playSoundBody = index.match(/function playSound\(type\)\s*\{([\s\S]*?)\n\s*\}\n\n\s*function requireSupabase\(\)/)?.[1] || '';
@@ -63,7 +64,8 @@ expect(/"name": "Does the game work on mobile\?"[\s\S]*?"text": "Yes\. The game 
 expect(/3D geography quiz/.test(index) && /world landmark quiz/.test(index) && /free geography game/.test(index) && /multiplayer geography game/.test(index), '영문 핵심 검색어가 메타데이터와 구조화 데이터에 없습니다.');
 expect(/World landmark guessing game/i.test(index) && /interactive map quiz/i.test(index) && /geography trivia/i.test(index), '추가 영문 검색 의도 문구가 본문·구조화 데이터에 없습니다.');
 expect(/Free Online Geography Quiz \| GeoPinder Arcade/.test(index) && /Play a free online geography quiz on a 3D globe\./.test(index), '언어 전환 시 동적 title·description이 영문 SEO 메타데이터와 일치하지 않습니다.');
-expect(/"@type": "FAQPage"/.test(index) && /GeoPinder는 어떻게 플레이하나요\?/.test(index) && /난이도별 시간 제한이 있나요\?/.test(index), '화면 FAQ와 연결된 FAQPage JSON-LD가 없습니다.');
+expect(/"@type": "FAQPage"/.test(index) && /"@id": "https:\/\/geopinder-arcade\.vercel\.app\/#faq/.test(index) && /"inLanguage": "en"/.test(index), '영어 기본 화면과 연결된 FAQPage JSON-LD가 없습니다.');
+expect(!faqJsonLd.includes('GeoPinder는 어떻게 플레이하나요?'), 'FAQPage JSON-LD에 영어 기본 화면과 일치하지 않는 한국어 질문이 남아 있습니다.');
 expect(/window\.location\.pathname\.match/.test(index) && /params\.get\('go'\)/.test(index) && /utm_campaign/.test(index) && /window\.location\.replace/.test(index), 'Vanilla 클라이언트 UTM 단축 경로 리디렉트가 없습니다.');
 expect(/free online world landmark guessing game with no download/i.test(index) && /distance-based scoring/i.test(index) && /free browser geography game with no download/i.test(index), '추가 롱테일 영문 검색 의도 문구가 초기 HTML에 없습니다.');
 expect(/Can I play a free browser geography game without downloading anything\?/.test(index) && /How does the distance-based geography score work\?/.test(index) && /world landmark guessing game that runs in a modern browser/.test(index), '추가 롱테일 FAQ와 FAQPage 답변이 없습니다.');
