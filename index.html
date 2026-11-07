@@ -444,6 +444,34 @@
       color: var(--white);
       text-align: left;
     }
+    .seo-disclosure {
+      margin-top: 12px;
+      border: 1px solid rgba(0, 255, 255, 0.36);
+      background: rgba(0, 255, 255, 0.035);
+    }
+    .seo-disclosure > summary {
+      display: flex;
+      min-height: 34px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      color: var(--cyan);
+      cursor: pointer;
+      font: 700 12px/1.2 ui-monospace, monospace;
+      letter-spacing: .04em;
+      list-style: none;
+      text-transform: uppercase;
+    }
+    .seo-disclosure > summary::-webkit-details-marker { display: none; }
+    .seo-disclosure > summary::after { content: '+'; color: var(--green); font-size: 18px; }
+    .seo-disclosure[open] > summary { border-bottom: 1px dashed rgba(0, 255, 255, 0.36); }
+    .seo-disclosure[open] > summary::after { content: '−'; }
+    .seo-disclosure > summary:hover, .seo-disclosure > summary:focus-visible {
+      color: #050505;
+      background: var(--cyan);
+      outline: none;
+    }
+    .seo-disclosure .seo-intro { margin: 0; padding: 14px 12px 2px; border-top: 0; }
     .seo-intro h2 {
       margin: 0 0 8px;
       color: var(--cyan);
@@ -929,7 +957,9 @@
           <button id="report-question-btn" class="btn btn-white" type="button">문제 제보</button>
           <button class="btn donate-btn btn-yellow" type="button">개발자 후원</button>
         </div>
-        <section class="seo-intro" aria-labelledby="game-intro-title">
+        <details class="seo-disclosure">
+          <summary id="seo-disclosure-summary">게임 소개 및 FAQ</summary>
+          <section class="seo-intro" aria-labelledby="game-intro-title">
           <h2 id="game-intro-title">3D World Geography Quiz · 세계 지리 퀴즈 게임</h2>
           <p>GeoPinder Arcade is a free 3D geography quiz and world landmark quiz for the browser. Study a landmark photo and hint, place your guess on the interactive globe, and score higher when you are closer to the real location. Play solo or challenge a friend in a real-time multiplayer geography game.</p>
           <p lang="en">Test your world geography knowledge with a landmark guessing game built for quick rounds. GeoPinder combines an interactive map quiz, geography trivia, and distance-based scoring in a free browser game with no installation required.</p>
@@ -975,7 +1005,8 @@
               </details>
             </div>
           </section>
-        </section>
+          </section>
+        </details>
       </section>
     </div>
 
@@ -1161,7 +1192,7 @@
         ['사진과 힌트를 보고 3D 지구본의 위치를 선택하세요. 실제 위치와의 거리가 짧을수록 높은 점수를 얻습니다.', 'Look at the photo and hint, then choose a location on the 3D globe. The closer you are, the higher your score.'],
         ['게임 상태', 'Game status'], ['현재 문제', 'Current question'], ['문제 랜드마크 이미지', 'Landmark image for the question'], ['문제를 불러오는 중입니다.', 'Loading question...'], ['상대방의 제출을 기다리는 중입니다.', 'Waiting for your opponent to submit...'], ['여기가 확실해!', 'This is my guess!'],
         ['공유하기', 'Share'], ['GeoPinder 공유하기', 'Share GeoPinder'], ['난이도 선택 (Difficulty)', 'Choose difficulty'], ['난이도 선택', 'Choose difficulty'], ['초급', 'EASY'], ['중급', 'NORMAL'], ['고급', 'HARD'], ['제한 없음', 'NO TIMER'], ['1P 혼자하기', '1P SOLO'], ['2P 대결하기', '2P BATTLE'], ['문제 제보', 'SUBMIT QUESTION'], ['개발자 후원', 'SUPPORT DEVELOPER'],
-        ['3D 세계 지리 퀴즈 게임', '3D World Geography Quiz'], ['GeoPinder Arcade는 사진과 힌트를 보고 3D 지구본에서 세계 랜드마크의 위치를 찾는 무료 웹 게임입니다. 실제 위치와 가까운 곳을 찍을수록 높은 점수를 얻고, 친구와 2P 대결로 정확도를 겨룰 수 있습니다.', 'GeoPinder Arcade is a free web game where you find world landmarks on a 3D globe from a photo and hint. Get closer to the real location for a higher score, or challenge a friend in 2P mode.'],
+        ['게임 소개 및 FAQ', 'ABOUT THE GAME & FAQ'], ['3D 세계 지리 퀴즈 게임', '3D World Geography Quiz'], ['GeoPinder Arcade는 사진과 힌트를 보고 3D 지구본에서 세계 랜드마크의 위치를 찾는 무료 웹 게임입니다. 실제 위치와 가까운 곳을 찍을수록 높은 점수를 얻고, 친구와 2P 대결로 정확도를 겨룰 수 있습니다.', 'GeoPinder Arcade is a free web game where you find world landmarks on a 3D globe from a photo and hint. Get closer to the real location for a higher score, or challenge a friend in 2P mode.'],
         ['GeoPinder 게임 안내', 'GeoPinder game guide'], ['GeoPinder는 어떻게 플레이하나요?', 'How do I play GeoPinder?'], ['랜드마크 사진과 힌트를 확인한 뒤 지구본을 돌려 위치를 선택하세요. 정답과의 거리가 짧을수록 더 높은 점수를 받습니다.', 'Check the landmark photo and hint, rotate the globe, and choose a location. The shorter the distance to the answer, the higher your score.'], ['난이도별 시간 제한이 있나요?', 'Are there time limits?'], ['초급은 시간 제한이 없고, 중급은 20초, 고급은 10초 안에 위치를 선택해야 합니다.', 'Easy has no timer, Normal gives you 20 seconds, and Hard gives you 10 seconds to choose a location.'], ['친구와 함께 플레이할 수 있나요?', 'Can I play with a friend?'], ['2P 대결방을 만든 뒤 초대 링크를 공유하면 실시간으로 같은 문제를 풀며 점수를 비교할 수 있습니다.', 'Create a 2P battle room and share the invite link to solve the same questions and compare scores in real time.'],
         ['문제 제보 창 닫기', 'Close question submission'], ['닫기', 'CLOSE'], ['새로운 랜드마크 문제를 함께 만들어 주세요.', 'Help us create new landmark questions.'], ['랜드마크 이름', 'Landmark name'], ['문제 힌트', 'Question hint'], ['예: 경복궁', 'e.g. Gyeongbokgung Palace'], ['플레이어가 위치를 추측할 수 있는 힌트를 적어 주세요.', 'Write a hint that helps players guess the location.'], ['장소 설정', 'Location'], ['장소 설정 방식', 'Location input method'], ['위도·경도 입력', 'Enter coordinates'], ['지도에서 선택', 'Choose on map'], ['위도 (Latitude)', 'Latitude'], ['경도 (Longitude)', 'Longitude'], ['지도를 클릭하면 네온 핀이 표시되고 좌표가 자동 입력됩니다.', 'Click the map to place a neon pin and fill in the coordinates.'], ['랜드마크 위치 선택 지도', 'Landmark location selection map'], ['위도와 경도를 직접 입력해 주세요.', 'Enter latitude and longitude directly.'], ['랜드마크 사진', 'Landmark photo'], ['JPEG, PNG, WebP만 가능하며 파일 크기는 최대 10MB입니다. 사진은 검토용으로만 비공개 보관됩니다.', 'JPEG, PNG, or WebP only, up to 10 MB. Photos are kept private for review only.'], ['선택한 제보 사진 미리보기', 'Preview of submitted photo'], ['회신 이메일 (선택)', 'Reply email (optional)'], ['제보 내용 보내기', 'SUBMIT QUESTION'], ['사진은 직접 촬영했거나 사용 권한이 있는 자료만 등록해 주세요.', 'Only submit photos you took or have permission to use.'],
         ['후원 창 닫기', 'Close support dialog'], ['GeoPinder Arcade 개발·운영 후원', 'Support GeoPinder Arcade development'], ['단건 후원 금액 5,000원', 'One-time donation amount: KRW 5,000'], ['이름', 'Name'], ['이메일', 'Email'], ['후원자 이름', 'Supporter name'], ['결제 처리에 필요한 이름과 이메일이 StepPay에 전달됨을 확인했습니다. 카드 정보는 GeoPinder에 저장되지 않습니다.', 'I understand that my name and email will be sent to StepPay for payment. GeoPinder does not store card details.'], ['₩5,000 후원하고 결제하기', 'Donate KRW 5,000 and pay'], ['결제창은 StepPay의 안전한 페이지에서 새 탭으로 열립니다. 팝업이 차단되면 현재 탭으로 이동합니다.', 'Checkout opens in a secure StepPay page in a new tab. If blocked, it opens in this tab.'], ['해외 방문자용 후원 페이지를 여는 중입니다.', 'Opening the international support page...'], ['팝업이 차단되어 현재 탭에서 Buy Me a Coffee 후원 페이지로 이동합니다.', 'The popup was blocked, so Buy Me a Coffee will open in this tab.'], ['이름, 이메일, 결제 정보 전송 동의를 확인해 주세요.', 'Confirm your name, email, and consent to send payment information.'], ['StepPay 결제 페이지를 준비하고 있습니다', 'Preparing the StepPay payment page'], ['결제창 준비 중...', 'Preparing checkout...'], ['StepPay 결제 페이지를 안전하게 준비하고 있습니다.', 'Preparing a secure StepPay checkout...'], ['결제창을 새 탭에서 열었습니다. 결제가 끝난 뒤 이 게임 탭으로 돌아오세요.', 'Checkout opened in a new tab. Return to this game tab after payment.'], ['새 탭에서 결제 중', 'Checkout in new tab'], ['팝업이 차단되어 현재 탭에서 StepPay 결제 페이지로 이동합니다.', 'The popup was blocked, so StepPay checkout will open in this tab.'],

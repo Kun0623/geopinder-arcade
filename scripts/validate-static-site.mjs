@@ -73,6 +73,8 @@ expect(/hintEn/.test(index) && /No hint available\./.test(index), '영어 데모
 expect(/hint_en/.test(index) && /hint_en \|\| question\.hintEn/.test(index), 'Supabase hint_en 영어 힌트 컬럼 연결이 없습니다.');
 expect(existsSync(resolve(root, 'supabase/migrations/20261030130500_add_english_landmark_hints.sql')), '영어 랜드마크 힌트 migration 파일이 없습니다.');
 expect(/<h1>/i.test(index) && /<h2>/i.test(index), '의미 있는 H1/H2가 없습니다.');
+expect(/<details class="seo-disclosure">\s*<summary id="seo-disclosure-summary">게임 소개 및 FAQ<\/summary>/i.test(index), 'SEO/GEO 소개 콘텐츠는 접힘형 disclosure UI로 제공되어야 합니다.');
+expect(/게임 소개 및 FAQ/.test(index) && /ABOUT THE GAME & FAQ/.test(index), 'SEO/GEO disclosure summary의 한국어·영어 라벨이 없습니다.');
 expect(/<meta name="google-adsense-account" content="ca-pub-\d+">/i.test(index), 'Google AdSense Publisher ID 메타 태그가 없습니다.');
 expect(/<script async src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-\d+" crossorigin="anonymous"><\/script>/i.test(index), 'Google Auto Ads 로더 스크립트가 없습니다.');
 expect(/id="ad-slot"/.test(index) && /function mountAdSenseUnit\(\)/.test(index) && /adsenseAdSlot/.test(index), '게임 종료 후 명시적 AdSense 광고 슬롯 연결이 없습니다.');
