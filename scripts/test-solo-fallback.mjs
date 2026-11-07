@@ -112,12 +112,12 @@ try {
 
   await client.send('Page.enable');
   await client.send('Runtime.enable');
-  await waitFor('3D globe and 1P start button', async () => evaluate(client, `Boolean(document.querySelector('#globeViz canvas') && document.getElementById('start-btn'))`));
+  await waitFor('1P start button before deferred globe load', async () => evaluate(client, `Boolean(!document.querySelector('#globeViz canvas') && document.getElementById('start-btn'))`));
   await evaluate(client, `localStorage.setItem('geopinder.playerInitials.v1', 'g9p'); location.reload()`);
   await waitFor('remembered initials after reload', async () => evaluate(client, `(() => {
     const input = document.getElementById('initials-input');
     const note = document.getElementById('initials-memory-note');
-    return Boolean(document.querySelector('#globeViz canvas')) && input.value === 'G9P' && note.hidden === false;
+    return !document.querySelector('#globeViz canvas') && input.value === 'G9P' && note.hidden === false;
   })()`));
 
   if (expectSupportModal) {
@@ -168,7 +168,7 @@ try {
       const panel = document.getElementById('quiz-panel');
       const modal = document.getElementById('start-modal');
       const hint = document.getElementById('quiz-hint');
-      return !modal.classList.contains('is-open') && !panel.classList.contains('hidden') && hint.textContent.includes('“');
+      return !modal.classList.contains('is-open') && !panel.classList.contains('hidden') && hint.textContent.includes('“') && Boolean(window.__geopinderGlobeTextureInfo?.url);
     })()`));
   } catch (error) {
     const diagnostics = await evaluate(client, `(() => ({

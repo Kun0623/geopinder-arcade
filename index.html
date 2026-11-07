@@ -142,7 +142,6 @@
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
-  <script src="https://unpkg.com/globe.gl"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@1.530/neodgm/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
@@ -1218,8 +1217,17 @@
       const GAMEPLAY_START_ALTITUDE = 1.35;
       // 텍스처가 흐려지기 시작하는 근접 영역을 피하는 보수적인 줌 상한입니다.
       const GAMEPLAY_MIN_DISTANCE_RATIO = 1.70;
-      const GLOBE_TEXTURE_8K_URL = 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Nasa_land_ocean_ice_8192.jpg';
-      const GLOBE_TEXTURE_4K_URL = 'https://cdn.jsdelivr.net/gh/turban/webgl-earth@master/images/2_no_clouds_4k.jpg';
+      const GLOBE_SCRIPT_URL = 'https://unpkg.com/globe.gl@2.46.2/dist/globe.gl.min.js';
+      const GLOBE_TEXTURE_DESKTOP = Object.freeze({
+        avif: '/assets/globe/earth-4096.avif',
+        webp: '/assets/globe/earth-4096.webp',
+        jpg: '/assets/globe/earth-4096.jpg'
+      });
+      const GLOBE_TEXTURE_MOBILE = Object.freeze({
+        avif: '/assets/globe/earth-2048.avif',
+        webp: '/assets/globe/earth-2048.webp',
+        jpg: '/assets/globe/earth-2048.jpg'
+      });
       const GLOBE_BUMP_URL = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
       const ROUND_SECONDS_BY_DIFFICULTY = Object.freeze({
         easy: null,
@@ -1227,6 +1235,8 @@
         hard: 10
       });
       const $ = (id) => document.getElementById(id);
+      let globeLoadPromise = null;
+      let globeInitPromise = null;
       const LANGUAGE_STORAGE_KEY = 'geopinder.language.v1';
       const translationPairs = [
         ['GeoPinder Arcade 게임', 'GeoPinder Arcade game'], ['게임 소개', 'About the game'], ['지구본 위에서 랜드마크 위치를 찾는 아케이드 게임', 'An arcade game about finding landmarks on a globe'],
@@ -2118,11 +2128,58 @@
         timerInterval = null;
       }
 
-      function initializeGlobe() {
-        if (typeof window.Globe !== 'function') {
-          showToast('3D 지구본을 불러오지 못했습니다. 네트워크를 확인하세요.', 'error');
-          return;
+      function ensureGlobeRuntime() {
+        if (typeof window.Globe === 'function') return Promise.resolve();
+        if (globeLoadPromise) return globeLoadPromise;
+        globeLoadPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          const timeoutId = window.setTimeout(() => {
+            script.remove();
+            reject(new Error('Globe.gl load timed out'));
+          }, 30000);
+          script.src = GLOBE_SCRIPT_URL;
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          script.onload = () => {
+            window.clearTimeout(timeoutId);
+            if (typeof window.Globe === 'function') resolve();
+            else reject(new Error('Globe.gl global was not created'));
+          };
+          script.onerror = () => {
+            window.clearTimeout(timeoutId);
+            reject(new Error('Globe.gl script failed to load'));
+          };
+          document.head.appendChild(script);
+        });
+        return globeLoadPromise;
+      }
+
+      function supportsImageFormat(mimeType) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          return canvas.toDataURL(mimeType).startsWith(`data:${mimeType}`);
+        } catch {
+          return false;
         }
+      }
+
+      function getGlobeTextureUrl() {
+        const isMobile = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+        const textures = isMobile ? GLOBE_TEXTURE_MOBILE : GLOBE_TEXTURE_DESKTOP;
+        const format = supportsImageFormat('image/avif')
+          ? 'avif'
+          : supportsImageFormat('image/webp') ? 'webp' : 'jpg';
+        return { isMobile, format, url: textures[format] };
+      }
+
+      async function initializeGlobe() {
+        if (myGlobe) return myGlobe;
+        if (globeInitPromise) return globeInitPromise;
+        globeInitPromise = (async () => {
+          await ensureGlobeRuntime();
+          if (typeof window.Globe !== 'function') throw new Error('Globe.gl is unavailable');
         myGlobe = Globe()($('globeViz'))
           .bumpImageUrl(GLOBE_BUMP_URL)
           .polygonAltitude(0.01)
@@ -2169,10 +2226,10 @@
 
         const renderer = myGlobe.renderer();
         if (renderer?.setPixelRatio) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        const maxTextureSize = renderer?.capabilities?.maxTextureSize || 4096;
-        const globeTextureUrl = maxTextureSize >= 8192 ? GLOBE_TEXTURE_8K_URL : GLOBE_TEXTURE_4K_URL;
+        const textureInfo = getGlobeTextureUrl();
+        const globeTextureUrl = textureInfo.url;
         myGlobe.globeImageUrl(globeTextureUrl);
-        window.__geopinderGlobeTextureInfo = { maxTextureSize, globeTextureUrl };
+        window.__geopinderGlobeTextureInfo = { ...textureInfo, globeTextureUrl };
         myGlobe.controls().autoRotate = true;
         myGlobe.controls().autoRotateSpeed = 1;
         myGlobe.controls().minDistance = 200;
@@ -2182,6 +2239,13 @@
           myGlobe.width(window.innerWidth).height(window.innerHeight);
           if (renderer?.setPixelRatio) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         });
+          return myGlobe;
+        })().catch((error) => {
+          globeInitPromise = null;
+          showToast('3D 지구본을 불러오지 못했습니다. 네트워크를 확인하세요.', 'error');
+          throw error;
+        });
+        return globeInitPromise;
       }
 
       function focusGameplayGlobe() {
@@ -2577,7 +2641,12 @@
         }, 1200);
       }
 
-      function startGameMulti({ questions = null, matchId = currentMatchId } = {}) {
+      async function startGameMulti({ questions = null, matchId = currentMatchId } = {}) {
+        try {
+          await initializeGlobe();
+        } catch {
+          return;
+        }
         if (Array.isArray(questions) && questions.length >= TOTAL_ROUNDS) currentQuestions = questions;
         if (Number.isInteger(matchId) && matchId > 0) currentMatchId = matchId;
         gamePhase = 'playing';
@@ -2601,8 +2670,15 @@
         requestArcadeFullscreen();
         const button = $('start-btn');
         setBusy(button, true, 'LOADING...');
+        const globePromise = initializeGlobe();
         const data = await getQuestions() || FALLBACK_QUESTIONS;
         if (data) {
+          try {
+            await globePromise;
+          } catch {
+            setBusy(button, false, '1P 혼자하기');
+            return;
+          }
           const isDemoMode = data === FALLBACK_QUESTIONS;
           allQuestions = data;
           currentQuestions = shuffleArray([...allQuestions]).slice(0, TOTAL_ROUNDS);
@@ -2628,8 +2704,15 @@
         if (!requireSupabase()) return;
         const button = $('multi-btn');
         setBusy(button, true, 'CREATING...');
+        const globePromise = initializeGlobe();
         const data = await getQuestions();
         if (!data) {
+          setBusy(button, false, '2P 대결하기');
+          return;
+        }
+        try {
+          await globePromise;
+        } catch {
           setBusy(button, false, '2P 대결하기');
           return;
         }
@@ -2665,6 +2748,11 @@
         if (error || !data?.questions) {
           showToast('존재하지 않거나 만료된 방입니다.', 'error');
           showModal('start-modal');
+          return;
+        }
+        try {
+          await initializeGlobe();
+        } catch {
           return;
         }
         gamePhase = 'lobby';
@@ -2820,7 +2908,6 @@
         event.target.value = normalizeInitials(event.target.value);
       });
 
-      initializeGlobe();
       fetch('/landmark-commons-attributions.json')
         .then((response) => response.ok ? response.json() : Promise.reject(new Error('Attribution manifest unavailable')))
         .then((manifest) => {

@@ -47,6 +47,12 @@ expect(/@media \(hover: hover\) and \(pointer: fine\)/i.test(index), '데스크�
 expect(/<!-- Vercel 환경변수 또는 직접 입력 -->/.test(index), 'Supabase 구성 주석이 없습니다.');
 expect(/window\.GEOPINDER_CONFIG/.test(index) && /supabaseAnonKey/.test(index), 'Supabase 공개 구성 방어 로직이 없습니다.');
 expect(/<meta name="description"/i.test(index), 'SEO description이 없습니다.');
+expect(existsSync(resolve(root, 'assets/globe/earth-4096.avif')) && existsSync(resolve(root, 'assets/globe/earth-4096.webp')) && existsSync(resolve(root, 'assets/globe/earth-4096.jpg')), '데스크톱 지구 텍스처 자산이 없습니다.');
+expect(existsSync(resolve(root, 'assets/globe/earth-2048.avif')) && existsSync(resolve(root, 'assets/globe/earth-2048.webp')) && existsSync(resolve(root, 'assets/globe/earth-2048.jpg')), '모바일 지구 텍스처 자산이 없습니다.');
+expect(!/<script[^>]+src="https:\/\/unpkg\.com\/globe\.gl/i.test(index), 'Globe.gl이 초기 HTML에서 eager 로드되고 있습니다.');
+expect(/const GLOBE_SCRIPT_URL = 'https:\/\/unpkg\.com\/globe\.gl@2\.46\.2\/dist\/globe\.gl\.min\.js'/.test(index) && /function ensureGlobeRuntime\(\)/.test(index), 'Globe.gl 상호작용 후 지연 로더가 없습니다.');
+expect(/function getGlobeTextureUrl\(\)/.test(index) && /GLOBE_TEXTURE_MOBILE/.test(index) && /supportsImageFormat\('image\/avif'\)/.test(index), 'AVIF/WebP·모바일 텍스처 분기가 없습니다.');
+expect(/const globePromise = initializeGlobe\(\);/.test(index) && /await globePromise;/.test(index), '게임 시작 흐름이 Globe 초기화를 기다리지 않습니다.');
 expect(/<meta property="og:title"/i.test(index) && /<meta name="twitter:card"/i.test(index), 'OG/Twitter 메타데이터가 없습니다.');
 expect(/property="og:image:type" content="image\/png"/i.test(index) && /name="twitter:image:alt"/i.test(index), '공유 이미지 보조 메타데이터가 없습니다.');
 expect(/<link rel="canonical" href="https:\/\/geopinder-arcade\.vercel\.app\/">/i.test(index), 'Production canonical URL이 없습니다.');
@@ -160,8 +166,8 @@ expect(/rememberInitials\(initials\)/.test(saveRankingBody) && /restoreSavedInit
 expect(/function focusGameplayGlobe\(\)/.test(index) && /getGlobeRadius\(\)/.test(focusGameplayGlobeBody) && /controls\.minDistance/.test(focusGameplayGlobeBody) && /pointOfView\(/.test(focusGameplayGlobeBody), '게임 시작 시 안전한 근접 지구본 POV를 적용하는 공통 함수가 필요합니다.');
 expect(/GAMEPLAY_MIN_DISTANCE_RATIO\s*=\s*1\.(?:[2-9]\d|7\d)/.test(index), '지구본 과도한 확대를 막는 안전한 최소 카메라 거리가 필요합니다.');
 expect((index.match(/focusGameplayGlobe\(\)/g) || []).length >= 3, '1P·2P 시작 경로가 공통 근접 지구본 POV를 호출해야 합니다.');
-expect(/GLOBE_TEXTURE_8K_URL\s*=\s*['"][^'"]*8192|GLOBE_TEXTURE_4K_URL\s*=\s*['"][^'"]*4k/i.test(index), '확대 시 깨짐을 줄이는 8K·4K 지구본 텍스처가 필요합니다.');
-expect(/renderer\(\)[\s\S]*?setPixelRatio\([\s\S]*?devicePixelRatio/.test(index) && /maxTextureSize[\s\S]*?globeTextureUrl/.test(index), '기기별 WebGL 텍스처 한도와 디바이스 픽셀비율을 반영해야 합니다.');
+expect(/GLOBE_TEXTURE_DESKTOP[\s\S]*?earth-4096\.(?:avif|webp|jpg)/.test(index) && /GLOBE_TEXTURE_MOBILE[\s\S]*?earth-2048\.(?:avif|webp|jpg)/.test(index), '데스크톱·모바일 지구본 텍스처 분기가 필요합니다.');
+expect(/renderer\(\)[\s\S]*?setPixelRatio\([\s\S]*?devicePixelRatio/.test(index) && /window\.__geopinderGlobeTextureInfo/.test(index), '기기별 WebGL 픽셀비율과 선택된 텍스처 정보를 반영해야 합니다.');
 expect(/function getQuestionImageUrl\(question\)/.test(index) && /function setQuestionImage\(question\)/.test(index) && /image\.onerror/.test(index), 'Supabase 문제 이미지 URL 정규화와 404 fallback이 필요합니다.');
 expect(/storagePath\.startsWith\(configuredPrefix\)/.test(index) && /image\.classList\.add\('is-loading'\)/.test(index) && /image\.onload/.test(index), 'Supabase Storage 경로 중복과 깨진 이미지 아이콘 노출을 방어해야 합니다.');
 expect(/image-rendering:\s*auto/.test(index), '사진 문제 이미지는 pixelated 렌더링을 사용하면 안 됩니다.');
